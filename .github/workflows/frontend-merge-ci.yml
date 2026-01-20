@@ -1,0 +1,63 @@
+name: FE MERGE CI PIPELINE
+
+on:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fe-merge-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  merge-ci:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Unit tests
+        run: npm test --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+      # 주석은 추후 제거
+      # E2E 테스트 도입 시 활성화 (현재 테스트 코드 없음, 브라우저 설치는 비용 큼)
+      # - name: Install Playwright Browsers
+      #   run: npx playwright install --with-deps chromium
+
+      # - name: Start server
+      #   run: |
+      #     npm run start &
+      #     npx wait-on http://localhost:3000 --timeout 60000
+      #   env:
+      #     NODE_ENV: production
+
+      # - name: Run E2E tests
+      #   run: npm run test:e2e --if-present
+
+      - name: Upload build artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 30
