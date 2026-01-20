@@ -1,0 +1,109 @@
+name: FE PR CI PIPELINE
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: fe-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pr-ci:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        id: lint
+        run: npm run lint --if-present
+
+      # 주석은 추후 제거
+      # 현재 Build에서 tsc -b를 같이 돌리고 있기 때문에 생략
+      # - name: Type check
+      #   run: npm run typecheck --if-present
+
+      # 주석은 추후 제거
+      # Unit tests는 Build 전에 실행해서 실패를 빠르게 감지
+      - name: Unit tests
+        id: unit_tests
+        run: npm test --if-present
+
+      # 주석은 추후 제거
+      # PR에서도 빌드 수행: 번들링/환경 이슈를 조기에 발견
+      - name: Build
+        id: build
+        run: npm run build --if-present
+
+      # 주석은 추후 제거
+      # PR 코멘트용 상태 메시지 생성
+      - name: Prepare PR comment
+        id: pr_comment
+        if: always()
+        run: |
+          status_icon() {
+            case "$1" in
+              success) echo "✅" ;;
+              failure) echo "❌" ;;
+              cancelled) echo "⚪" ;;
+              skipped) echo "⏭️" ;;
+              *) echo "❓" ;;
+            esac
+          }
+
+          lint_outcome="${{ steps.lint.outcome }}"
+          tests_outcome="${{ steps.unit_tests.outcome }}"
+          build_outcome="${{ steps.build.outcome }}"
+
+          lint_icon="$(status_icon "$lint_outcome")"
+          tests_icon="$(status_icon "$tests_outcome")"
+          build_icon="$(status_icon "$build_outcome")"
+
+          overall="success"
+          for outcome in "$lint_outcome" "$tests_outcome" "$build_outcome"; do
+            if [ "$outcome" = "failure" ] || [ "$outcome" = "cancelled" ]; then
+              overall="failure"
+              break
+            fi
+          done
+
+          if [ "$overall" = "success" ]; then
+            header="✅ **CI 검증 완료!**"
+          else
+            header="❌ **CI 검증 실패**"
+          fi
+
+          {
+            echo "message<<EOF"
+            echo "$header"
+            echo "- Lint: $lint_icon"
+            echo "- Unit tests: $tests_icon"
+            echo "- Build: $build_icon"
+            echo "- 실행 결과: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # 주석은 추후 제거
+      # PR 코멘트로 각 단계 결과 요약
+      - name: Comment CI status
+        if: always()
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: ${{ steps.pr_comment.outputs.message }}
+          comment_tag: ci_status
