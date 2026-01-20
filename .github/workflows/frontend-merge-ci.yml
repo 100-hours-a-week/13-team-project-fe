@@ -61,3 +61,14 @@ jobs:
           path: dist/**
           if-no-files-found: error
           retention-days: 30
+
+      - name: List artifacts in THIS run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run_id = context.runId; // 또는 process.env.GITHUB_RUN_ID
+            const { owner, repo } = context.repo;
+
+            const res = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id });
+            core.info(`run_id=${run_id}`);
+            res.data.artifacts.forEach(a => core.info(`- ${a.name} (id=${a.id})`));
