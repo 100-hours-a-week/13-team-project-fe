@@ -21,7 +21,7 @@ jobs:
     env:
       DEPLOY_PATH: /var/www/html
       BACKUP_PATH: /var/www/html-backup
-      ROLLBACK_SCRIPT: /home/secrets.user/scripts/frontend/rollback.sh
+      ROLLBACK_SCRIPT: /home/{{ secrets.EC2_USER }}/scripts/frontend/rollback.sh
 
     steps:
       - name: Download build artifact
