@@ -1,0 +1,69 @@
+name: FE CD PIPELINE
+run-name: FE CD • ${{ github.event.workflow_run.head_sha }}
+
+on:
+  workflow_run:
+    workflows: ["FE MERGE CI PIPELINE"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fe-cd-${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04-arm
+    env:
+      DEPLOY_PATH: /var/www/html
+      BACKUP_PATH: /var/www/html-backup
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-${{ github.event.workflow_run.head_sha }}
+          path: dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Verify build output
+        run: test -d dist
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_KEY_PAIR }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.EC2_ELASTIC_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Backup Current Build
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }} \
+            "if [ -d \"$DEPLOY_PATH\" ]; then sudo mkdir -p \"$BACKUP_PATH\" && sudo rsync -az --delete \"$DEPLOY_PATH\"/ \"$BACKUP_PATH\"/; fi"
+
+      - name: Deploy to EC2
+        run: |
+          rsync -az --delete -e "ssh -p ${{ secrets.SSH_PORT }}" dist/ \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }}:/tmp/fe-dist-${{ github.event.workflow_run.head_sha }}/
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }} \
+            "sudo rsync -az --delete /tmp/fe-dist-${{ github.event.workflow_run.head_sha }}/ $DEPLOY_PATH/ && sudo rm -rf /tmp/fe-dist-${{ github.event.workflow_run.head_sha }}"
+
+      - name: Health check
+        run: |
+          url="http://${{ secrets.EC2_ELASTIC_IP }}"
+          for i in 1 2 3 4 5; do
+            if curl -fsS --max-time 5 "$url" > /dev/null; then
+              echo "Health check OK: $url"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Health check failed: $url"
+          exit 1
