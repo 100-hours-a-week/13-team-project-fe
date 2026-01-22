@@ -1,4 +1,4 @@
-name: FE MERGE CI PIPELINE
+name: FE CI PIPELINE
 
 on:
   push:
