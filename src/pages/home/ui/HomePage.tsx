@@ -1,146 +1,53 @@
-import reactLogo from '@/shared/assets/react.svg'
-import { Card } from '@/shared/ui/Card'
-import styles from './HomePage.module.css'
+import { useEffect, useState } from 'react'
 
-const layers = [
-  {
-    name: 'app',
-    description: 'App init, providers, global styles',
-    path: 'src/app',
-  },
-  {
-    name: 'pages',
-    description: 'Route-level compositions',
-    path: 'src/pages',
-  },
-  {
-    name: 'widgets',
-    description: 'Composite UI blocks',
-    path: 'src/widgets',
-  },
-  {
-    name: 'features',
-    description: 'User interactions and flows',
-    path: 'src/features',
-  },
-  {
-    name: 'entities',
-    description: 'Business entities and models',
-    path: 'src/entities',
-  },
-  {
-    name: 'shared',
-    description: 'Reusable UI, lib, and assets',
-    path: 'src/shared',
-  },
-]
+// [DevOps 테스트용] 백엔드 연결 테스트 - git checkout으로 복원
 
-const stack = [
-  { label: 'UI', value: 'React' },
-  { label: 'Language', value: 'TypeScript' },
-  { label: 'Bundler', value: 'Vite' },
-  { label: 'Architecture', value: 'Feature-Sliced' },
-]
+const API_URL = 'https://api.moyeobab.com/actuator/health'
 
-const principles = [
-  {
-    title: 'Layered ownership',
-    description: 'Each slice owns its responsibility and stays focused.',
-  },
-  {
-    title: 'Predictable imports',
-    description: 'Dependencies flow downward to keep slices decoupled.',
-  },
-  {
-    title: 'Scalable by default',
-    description: 'Add features without rewiring the whole app.',
-  },
-]
+type Status = 'loading' | 'up' | 'down'
 
 export function HomePage() {
+  const [status, setStatus] = useState<Status>('loading')
+
+  const checkHealth = async () => {
+    setStatus('loading')
+    try {
+      const res = await fetch(API_URL)
+      const data = await res.json()
+      setStatus(data.status === 'UP' ? 'up' : 'down')
+    } catch {
+      setStatus('down')
+    }
+  }
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        const res = await fetch(API_URL)
+        const data = await res.json()
+        setStatus(data.status === 'UP' ? 'up' : 'down')
+      } catch {
+        setStatus('down')
+      }
+    }
+    fetchHealth()
+    const interval = setInterval(fetchHealth, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const color = { loading: '#888', up: '#3b82f6', down: '#ef4444' }
+  const text = { loading: '확인 중...', up: '연결됨', down: '연결 실패' }
+
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.logo}>
-            <img src={reactLogo} alt="React logo" />
-          </span>
-          <div>
-            <p className={styles.brandTitle}>KTB Final Frontend</p>
-            <p className={styles.brandSubtitle}>React + TypeScript + Vite</p>
-          </div>
-        </div>
-        <div className={styles.headerActions}>
-          <a className={styles.headerLink} href="https://feature-sliced.design/">
-            FSD Docs
-          </a>
-          <a className={styles.headerButton} href="https://vite.dev/">
-            Vite Docs
-          </a>
-        </div>
-      </header>
-
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <div className={styles.heroText}>
-            <span className={styles.kicker}>Feature-Sliced Architecture</span>
-            <h1 className={styles.title}>
-              Ship fast without losing structure.
-            </h1>
-            <p className={styles.subtitle}>
-              This starter keeps your React app layered, clean, and ready to
-              scale from day one.
-            </p>
-            <div className={styles.ctaRow}>
-              <button className={styles.primary} type="button">
-                Start Building
-              </button>
-              <button className={styles.secondary} type="button">
-                Explore Structure
-              </button>
-            </div>
-            <div className={styles.metrics}>
-              {stack.map((item) => (
-                <div className={styles.metric} key={item.label}>
-                  <span className={styles.metricLabel}>{item.label}</span>
-                  <span className={styles.metricValue}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className={styles.heroPanel}>
-            <div className={styles.panelHeader}>Layer Map</div>
-            <ul className={styles.layerList}>
-              {layers.map((layer) => (
-                <li className={styles.layerItem} key={layer.name}>
-                  <div>
-                    <span className={styles.layerName}>{layer.name}</span>
-                    <span className={styles.layerDescription}>
-                      {layer.description}
-                    </span>
-                  </div>
-                  <span className={styles.layerPath}>{layer.path}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className={styles.grid}>
-          {principles.map((item) => (
-            <Card
-              key={item.title}
-              title={item.title}
-              description={item.description}
-            />
-          ))}
-        </section>
-      </main>
-
-      <footer className={styles.footer}>
-        <span>Aliases: @/ maps to src/ for fast imports.</span>
-        <span>Ready for routing, state, and API layers.</span>
-      </footer>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+      <h1 style={{ fontSize: '2rem', fontWeight: 600, margin: 0 }}>모여밥</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: color[status] }} />
+        <span style={{ fontSize: '1.1rem', color: color[status], fontWeight: 500 }}>{text[status]}</span>
+      </div>
+      <button onClick={checkHealth} style={{ marginTop: '8px', padding: '8px 16px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>
+        다시 확인
+      </button>
     </div>
   )
 }
