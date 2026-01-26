@@ -3,7 +3,7 @@ run-name: FE CD • ${{ github.event.workflow_run.head_sha }}
 
 on:
   workflow_run:
-    workflows: ["FE MERGE CI PIPELINE"]
+    workflows: ["FE CI PIPELINE"]
     types: [completed]
 
 permissions:
@@ -21,6 +21,7 @@ jobs:
     env:
       DEPLOY_PATH: /var/www/html
       BACKUP_PATH: /var/www/html-backup
+      ROLLBACK_SCRIPT: /home/{{ secrets.EC2_USER }}/scripts/frontend/rollback.sh
 
     steps:
       - name: Download build artifact
@@ -66,4 +67,8 @@ jobs:
             sleep 3
           done
           echo "Health check failed: $url"
+          echo "Running rollback script on server"
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }} \
+            "bash '$ROLLBACK_SCRIPT' '$DEPLOY_PATH' '$BACKUP_PATH'"
           exit 1
