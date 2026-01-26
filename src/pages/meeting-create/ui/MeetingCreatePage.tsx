@@ -3,7 +3,33 @@ import styles from './MeetingCreatePage.module.css'
 
 declare global {
   interface Window {
-    kakao?: any
+    kakao?: {
+      maps?: {
+        load: (callback: () => void) => void
+        Map: new (
+          container: HTMLElement,
+          options: { center: KakaoLatLng; level: number },
+        ) => KakaoMap
+        LatLng: new (lat: number, lng: number) => KakaoLatLng
+        LatLngBounds: new (sw: KakaoLatLng, ne: KakaoLatLng) => KakaoLatLngBounds
+        Marker: new (options: {
+          position: KakaoLatLng
+          draggable?: boolean
+        }) => KakaoMarker
+        event: {
+          addListener: (
+            target: unknown,
+            type: string,
+            handler: (...args: unknown[]) => void,
+          ) => void
+        }
+        services: {
+          Status: { OK: string }
+          Geocoder: new () => KakaoGeocoder
+          Places: new () => KakaoPlaces
+        }
+      }
+    }
   }
 }
 
@@ -26,11 +52,66 @@ type FormState = {
 
 type Errors = Partial<Record<keyof FormState, string>>
 
-const TITLE_REGEX =
-  /^[가-힣A-Za-z0-9\s\-_.!,?()\[\]]{2,20}$/
+// eslint-disable-next-line no-useless-escape
+const TITLE_REGEX = /^[가-힣A-Za-z0-9\s\-_.!,?()\[\]]{2,20}$/
+
 const ALLOWED_BOUNDS = {
   sw: { lat: 37.371637, lng: 127.094743 },
   ne: { lat: 37.411228, lng: 127.121829 },
+}
+
+type KakaoLatLng = {
+  getLat: () => number
+  getLng: () => number
+}
+
+type KakaoLatLngBounds = {
+  contain: (latlng: KakaoLatLng) => boolean
+  getSouthWest: () => KakaoLatLng
+  getNorthEast: () => KakaoLatLng
+}
+
+type KakaoMap = {
+  panTo: (latlng: KakaoLatLng) => void
+  setBounds: (bounds: KakaoLatLngBounds) => void
+  getCenter: () => KakaoLatLng
+  relayout: () => void
+}
+
+type KakaoMarker = {
+  setMap: (map: KakaoMap) => void
+  setVisible: (visible: boolean) => void
+  setPosition: (latlng: KakaoLatLng) => void
+  getPosition: () => KakaoLatLng
+}
+
+type KakaoGeocoderResultItem = {
+  road_address?: { address_name?: string }
+  address?: { address_name?: string }
+}
+
+type KakaoGeocoder = {
+  coord2Address: (
+    lng: number,
+    lat: number,
+    callback: (result: KakaoGeocoderResultItem[], status: string) => void,
+  ) => void
+}
+
+type KakaoPlace = {
+  id: string
+  place_name: string
+  road_address_name?: string
+  address_name?: string
+  x: string // lng
+  y: string // lat
+}
+
+type KakaoPlaces = {
+  keywordSearch: (
+    keyword: string,
+    callback: (data: KakaoPlace[], status: string) => void,
+  ) => void
 }
 
 let kakaoSdkPromise: Promise<void> | null = null
@@ -84,6 +165,30 @@ function isNotPast(value: string) {
   return date.getTime() >= Date.now()
 }
 
+function toFixedNumber(value: string, fractionDigits: number) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return null
+  return Number(num.toFixed(fractionDigits))
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getStringField(obj: Record<string, unknown>, key: string): string | null {
+  const v = obj[key]
+  return typeof v === 'string' ? v : null
+}
+
+function getIdField(obj: Record<string, unknown>): string | number | null {
+  const meetingId = obj['meetingId']
+  const id = obj['id']
+
+  if (typeof meetingId === 'string' || typeof meetingId === 'number') return meetingId
+  if (typeof id === 'string' || typeof id === 'number') return id
+  return null
+}
+
 export function MeetingCreatePage() {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>({
@@ -106,7 +211,7 @@ export function MeetingCreatePage() {
   const [modalError, setModalError] = useState<string | null>(null)
   const [modalStatus, setModalStatus] = useState<string | null>(null)
   const [modalSearch, setModalSearch] = useState('')
-  const [modalResults, setModalResults] = useState<any[]>([])
+  const [modalResults, setModalResults] = useState<KakaoPlace[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchAttempted, setIsSearchAttempted] = useState(false)
   const [isOutOfService, setIsOutOfService] = useState(false)
@@ -116,11 +221,11 @@ export function MeetingCreatePage() {
   } | null>(null)
 
   const mapRef = useRef<HTMLDivElement | null>(null)
-  const mapInstanceRef = useRef<any>(null)
-  const markerRef = useRef<any>(null)
-  const boundsRef = useRef<any>(null)
-  const geocoderRef = useRef<any>(null)
-  const placesRef = useRef<any>(null)
+  const mapInstanceRef = useRef<KakaoMap | null>(null)
+  const markerRef = useRef<KakaoMarker | null>(null)
+  const boundsRef = useRef<KakaoLatLngBounds | null>(null)
+  const geocoderRef = useRef<KakaoGeocoder | null>(null)
+  const placesRef = useRef<KakaoPlaces | null>(null)
 
   const appKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY as string | undefined
 
@@ -176,30 +281,15 @@ export function MeetingCreatePage() {
     const swipeCount = Number(form.swipeCount)
     if (!form.swipeCount) {
       next.swipeCount = '스와이프 수를 입력해 주세요.'
-    } else if (
-      !Number.isFinite(swipeCount) ||
-      swipeCount < 1 ||
-      swipeCount > 15
-    ) {
+    } else if (!Number.isFinite(swipeCount) || swipeCount < 1 || swipeCount > 15) {
       next.swipeCount = '스와이프 수는 1~15입니다.'
     }
 
     return next
-  }, [
-    form.searchRadiusKm,
-    form.swipeCount,
-    form.targetHeadcount,
-    form.voteDeadlineAt,
-  ])
+  }, [form.searchRadiusKm, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
 
-  const isStep1Valid = useMemo(
-    () => Object.keys(step1Errors).length === 0,
-    [step1Errors],
-  )
-  const isStep2Valid = useMemo(
-    () => Object.keys(step2Errors).length === 0,
-    [step2Errors],
-  )
+  const isStep1Valid = useMemo(() => Object.keys(step1Errors).length === 0, [step1Errors])
+  const isStep2Valid = useMemo(() => Object.keys(step2Errors).length === 0, [step2Errors])
 
   useEffect(() => {
     if (step === 1) {
@@ -209,20 +299,23 @@ export function MeetingCreatePage() {
     }
   }, [step, step1Errors, step2Errors])
 
-  const createBounds = () =>
-    new window.kakao.maps.LatLngBounds(
-      new window.kakao.maps.LatLng(ALLOWED_BOUNDS.sw.lat, ALLOWED_BOUNDS.sw.lng),
-      new window.kakao.maps.LatLng(ALLOWED_BOUNDS.ne.lat, ALLOWED_BOUNDS.ne.lng),
+  const createBounds = () => {
+    const maps = window.kakao?.maps
+    if (!maps) throw new Error('Kakao maps not loaded')
+    return new maps.LatLngBounds(
+      new maps.LatLng(ALLOWED_BOUNDS.sw.lat, ALLOWED_BOUNDS.sw.lng),
+      new maps.LatLng(ALLOWED_BOUNDS.ne.lat, ALLOWED_BOUNDS.ne.lng),
     )
+  }
 
   const resolveAddress = (lat: number, lng: number) => {
+    const maps = window.kakao?.maps
+    if (!maps?.services) return Promise.reject(new Error('Kakao services not loaded'))
+
     return new Promise<string>((resolve, reject) => {
-      const geocoder = new window.kakao.maps.services.Geocoder()
-      geocoder.coord2Address(lng, lat, (result: any, status: string) => {
-        if (
-          status !== window.kakao.maps.services.Status.OK ||
-          !result?.length
-        ) {
+      const geocoder = new maps.services.Geocoder()
+      geocoder.coord2Address(lng, lat, (result, status) => {
+        if (status !== maps.services.Status.OK || !result?.length) {
           reject(new Error('주소를 불러오지 못했습니다.'))
           return
         }
@@ -239,9 +332,11 @@ export function MeetingCreatePage() {
   }
 
   const moveMapTo = (lat: number, lng: number) => {
+    const maps = window.kakao?.maps
     const map = mapInstanceRef.current
-    if (!map) return
-    const latlng = new window.kakao.maps.LatLng(lat, lng)
+    if (!maps || !map) return
+
+    const latlng = new maps.LatLng(lat, lng)
     map.panTo(latlng)
     if (markerRef.current) {
       markerRef.current.setPosition(latlng)
@@ -255,6 +350,7 @@ export function MeetingCreatePage() {
       setModalError('지도 사용을 위해 환경 변수 설정이 필요합니다.')
       return
     }
+
     setModalError(null)
     setModalStatus('지도에서 위치를 선택하거나 검색해 주세요.')
     setModalSearch('')
@@ -266,36 +362,43 @@ export function MeetingCreatePage() {
     loadKakaoSdk(appKey)
       .then(() => {
         if (!mapRef.current) return
-        window.kakao.maps.load(() => {
+
+        const maps = window.kakao?.maps
+        if (!maps) throw new Error('Kakao maps not loaded')
+
+        maps.load(() => {
           const bounds = createBounds()
           boundsRef.current = bounds
+
           const sw = bounds.getSouthWest()
           const ne = bounds.getNorthEast()
-          const center = new window.kakao.maps.LatLng(
+          const center = new maps.LatLng(
             (sw.getLat() + ne.getLat()) / 2,
             (sw.getLng() + ne.getLng()) / 2,
           )
-          const map = new window.kakao.maps.Map(mapRef.current, {
+
+          const map = new maps.Map(mapRef.current as HTMLElement, {
             center,
             level: 4,
           })
           mapInstanceRef.current = map
-          geocoderRef.current = new window.kakao.maps.services.Geocoder()
-          placesRef.current = new window.kakao.maps.services.Places()
-          const marker = new window.kakao.maps.Marker({
+
+          geocoderRef.current = new maps.services.Geocoder()
+          placesRef.current = new maps.services.Places()
+
+          const marker = new maps.Marker({
             position: center,
             draggable: true,
           })
           markerRef.current = marker
           marker.setMap(map)
           marker.setVisible(false)
+
           map.setBounds(bounds)
           map.relayout()
-          requestAnimationFrame(() => {
-            map.relayout()
-          })
+          requestAnimationFrame(() => map.relayout())
 
-          window.kakao.maps.event.addListener(marker, 'dragend', () => {
+          maps.event.addListener(marker, 'dragend', () => {
             const position = marker.getPosition()
             if (!bounds.contain(position)) {
               setModalStatus('서비스 지역이 아닙니다.')
@@ -315,8 +418,13 @@ export function MeetingCreatePage() {
             setIsOutOfService(false)
           })
 
-          window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
-            const latlng = mouseEvent.latLng
+          maps.event.addListener(map, 'click', (...args: unknown[]) => {
+            const first = args[0]
+            if (!isRecord(first)) return
+            const latLng = first['latLng'] as unknown
+            if (!latLng || typeof (latLng as KakaoLatLng).getLat !== 'function') return
+
+            const latlng = latLng as KakaoLatLng
             if (!bounds.contain(latlng)) {
               setModalStatus('서비스 지역이 아닙니다.')
               setIsOutOfService(true)
@@ -329,7 +437,7 @@ export function MeetingCreatePage() {
             setIsOutOfService(false)
           })
 
-          window.kakao.maps.event.addListener(map, 'idle', () => {
+          maps.event.addListener(map, 'idle', () => {
             const centerPoint = map.getCenter()
             if (!bounds.contain(centerPoint)) {
               map.setBounds(bounds)
@@ -388,10 +496,17 @@ export function MeetingCreatePage() {
       setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
       return
     }
+    const maps = window.kakao?.maps
+    if (!maps) {
+      setModalResults([])
+      setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
+      return
+    }
+
     setIsSearching(true)
-    placesRef.current.keywordSearch(modalSearch.trim(), (data: any, status: string) => {
+    placesRef.current.keywordSearch(modalSearch.trim(), (data, status) => {
       setIsSearching(false)
-      if (status !== window.kakao.maps.services.Status.OK || !data?.length) {
+      if (status !== maps.services.Status.OK || !data?.length) {
         setModalResults([])
         setModalStatus('검색 결과가 없습니다.')
         return
@@ -401,12 +516,15 @@ export function MeetingCreatePage() {
     })
   }
 
-  const handleSelectSearchResult = (place: any) => {
+  const handleSelectSearchResult = (place: KakaoPlace) => {
     if (!place?.y || !place?.x) return
     const lat = Number(place.y)
     const lng = Number(place.x)
     const bounds = boundsRef.current
-    if (bounds && !bounds.contain(new window.kakao.maps.LatLng(lat, lng))) {
+    const maps = window.kakao?.maps
+    if (!maps) return
+
+    if (bounds && !bounds.contain(new maps.LatLng(lat, lng))) {
       setModalStatus('서비스 지역이 아닙니다.')
       setIsOutOfService(true)
       return
@@ -422,12 +540,22 @@ export function MeetingCreatePage() {
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
 
+    const latFixed = toFixedNumber(form.lat, 7)
+    const lngFixed = toFixedNumber(form.lng, 7)
+    if (latFixed === null || lngFixed === null) {
+      setErrors((prev) => ({
+        ...prev,
+        address: '좌표를 확인할 수 없습니다. 위치를 다시 선택해 주세요.',
+      }))
+      return
+    }
+
     const payload = {
       title: form.title.trim(),
       scheduledAt: toPayloadDate(form.scheduledAt),
       locationAddress: form.address,
-      locationLat: Number(Number(form.lat).toFixed(7)),
-      locationLng: Number(Number(form.lng).toFixed(7)),
+      locationLat: latFixed,
+      locationLng: lngFixed,
       targetHeadcount: Number(form.targetHeadcount),
       searchRadiusM: Math.round(Number(form.searchRadiusKm) * 1000),
       voteDeadlineAt: toPayloadDate(form.voteDeadlineAt),
@@ -445,22 +573,32 @@ export function MeetingCreatePage() {
         credentials: 'include',
         body: JSON.stringify(payload),
       })
-      const data = await response.json().catch(() => null)
+
+      const data: unknown = await response.json().catch(() => null)
+
       if (!response.ok) {
-        throw new Error(data?.message ?? '모임 생성에 실패했습니다.')
+        let msg = '모임 생성에 실패했습니다.'
+        if (isRecord(data)) {
+          const serverMsg = getStringField(data, 'message')
+          if (serverMsg) msg = serverMsg
+        }
+        throw new Error(msg)
       }
-      const meetingId = data?.meetingId ?? data?.id
+
+      let meetingId: string | number | null = null
+      if (isRecord(data)) {
+        meetingId = getIdField(data)
+      }
+
       if (!meetingId) {
         throw new Error('모임 ID를 확인할 수 없습니다.')
       }
+
       window.location.assign(`/meetings/${meetingId}/created`)
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
-        title:
-          error instanceof Error
-            ? error.message
-            : '모임 생성에 실패했습니다.',
+        title: error instanceof Error ? error.message : '모임 생성에 실패했습니다.',
       }))
     } finally {
       setIsSubmitting(false)
@@ -590,9 +728,7 @@ export function MeetingCreatePage() {
               className={styles.input}
               type="datetime-local"
               value={form.voteDeadlineAt}
-              onChange={(event) =>
-                updateField('voteDeadlineAt', event.target.value)
-              }
+              onChange={(event) => updateField('voteDeadlineAt', event.target.value)}
             />
             {errors.voteDeadlineAt && (
               <span className={styles.error}>{errors.voteDeadlineAt}</span>
@@ -635,9 +771,7 @@ export function MeetingCreatePage() {
               <input
                 type="checkbox"
                 checked={form.quickMeeting}
-                onChange={(event) =>
-                  updateField('quickMeeting', event.target.checked)
-                }
+                onChange={(event) => updateField('quickMeeting', event.target.checked)}
               />
               빠른 모임
             </label>
@@ -708,26 +842,28 @@ export function MeetingCreatePage() {
                     {isSearching ? '검색 중...' : '검색'}
                   </button>
                 </div>
+
                 <div className={styles.map} ref={mapRef} />
+
                 {isOutOfService && (
-                  <p className={styles.outOfService}>
-                    서비스 지역이 아닙니다.
-                  </p>
+                  <p className={styles.outOfService}>서비스 지역이 아닙니다.</p>
                 )}
+
                 {isSearchAttempted && (
                   <ul className={styles.searchList}>
                     {modalResults.length === 0 && (
-                      <li className={styles.searchEmpty}>
-                        검색 결과가 없습니다.
-                      </li>
+                      <li className={styles.searchEmpty}>검색 결과가 없습니다.</li>
                     )}
                     {modalResults.map((place) => {
                       const lat = Number(place.y)
                       const lng = Number(place.x)
                       const bounds = boundsRef.current
-                      const allowed = bounds
-                        ? bounds.contain(new window.kakao.maps.LatLng(lat, lng))
-                        : true
+                      const maps = window.kakao?.maps
+                      const allowed =
+                        maps && bounds
+                          ? bounds.contain(new maps.LatLng(lat, lng))
+                          : true
+
                       return (
                         <li key={place.id}>
                           <button

@@ -1,10 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import styles from './MeetingCreatedPage.module.css'
 
 type InviteResponse = {
   meetingId: number
   inviteCode: string
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getMessageFromUnknown(value: unknown): string | null {
+  if (!isRecord(value)) return null
+  const msg = value['message']
+  return typeof msg === 'string' ? msg : null
 }
 
 export function MeetingCreatedPage() {
@@ -19,88 +29,98 @@ export function MeetingCreatedPage() {
     return `${window.location.origin}/meetings/join?code=${inviteCode}`
   }, [inviteCode])
 
-  const fetchInvite = async () => {
+  const fetchInvite = useCallback(async () => {
     if (!meetingId) {
       setStatus('error')
       setMessage('모임 정보를 찾을 수 없습니다.')
       return
     }
+
     try {
       setStatus('loading')
       setMessage(null)
-      const response = await fetch(
-        `/api/v1/meetings/${meetingId}/invitation`,
-        {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          credentials: 'include',
-        },
-      )
-      const data = (await response.json()) as InviteResponse
+
+      const response = await fetch(`/api/v1/meetings/${meetingId}/invitation`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+      })
+
+      const data: unknown = await response.json().catch(() => null)
+
       if (!response.ok) {
+        const serverMsg = getMessageFromUnknown(data)
+        throw new Error(serverMsg ?? '초대코드를 불러오지 못했습니다.')
+      }
+
+      const typed = data as InviteResponse
+      if (!typed?.inviteCode) {
         throw new Error('초대코드를 불러오지 못했습니다.')
       }
-      if (!data?.inviteCode) {
-        throw new Error('초대코드를 불러오지 못했습니다.')
-      }
-      setInviteCode(data.inviteCode)
+
+      setInviteCode(typed.inviteCode)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
       setMessage(
-        error instanceof Error
-          ? error.message
-          : '초대코드를 불러오지 못했습니다.',
+        error instanceof Error ? error.message : '초대코드를 불러오지 못했습니다.',
       )
     }
-  }
+  }, [meetingId])
 
   useEffect(() => {
     void fetchInvite()
-  }, [meetingId])
+  }, [fetchInvite])
 
-  const setCopiedFeedback = (text: string) => {
+  const setCopiedFeedback = useCallback((text: string) => {
     setCopiedText(text)
     window.setTimeout(() => {
       setCopiedText(null)
     }, 1500)
-  }
+  }, [])
 
-  const copyWithFallback = (text: string) => {
-    const textarea = document.createElement('textarea')
-    textarea.value = text
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.focus()
-    textarea.select()
-    try {
-      const success = document.execCommand('copy')
-      document.body.removeChild(textarea)
-      if (success) {
-        setCopiedFeedback('복사 완료!')
-        return
-      }
-      throw new Error('copy failed')
-    } catch {
-      document.body.removeChild(textarea)
-      setMessage('복사에 실패했습니다.')
-    }
-  }
+  const copyWithFallback = useCallback(
+    (text: string) => {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
 
-  const handleCopy = async (text: string) => {
-    if (!text) return
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text)
-        setCopiedFeedback('복사 완료!')
-        return
+      try {
+        const success = document.execCommand('copy')
+        document.body.removeChild(textarea)
+        if (success) {
+          setCopiedFeedback('복사 완료!')
+          return
+        }
+        throw new Error('copy failed')
+      } catch {
+        document.body.removeChild(textarea)
+        setMessage('복사에 실패했습니다.')
       }
-      copyWithFallback(text)
-    } catch {
-      copyWithFallback(text)
-    }
-  }
+    },
+    [setCopiedFeedback],
+  )
+
+  const handleCopy = useCallback(
+    async (text: string) => {
+      if (!text) return
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text)
+          setCopiedFeedback('복사 완료!')
+          return
+        }
+        copyWithFallback(text)
+      } catch {
+        copyWithFallback(text)
+      }
+    },
+    [copyWithFallback, setCopiedFeedback],
+  )
 
   return (
     <div className={styles.page}>
@@ -144,13 +164,11 @@ export function MeetingCreatedPage() {
                 type="button"
                 className={styles.secondaryButton}
                 onClick={() => handleCopy(inviteLink)}
+                disabled={!inviteLink}
               >
                 초대 링크 복사
               </button>
-              <Link
-                to={`/meetings/${meetingId}`}
-                className={styles.primaryButton}
-              >
+              <Link to={`/meetings/${meetingId}`} className={styles.primaryButton}>
                 모임 상세로 이동
               </Link>
             </div>
@@ -158,9 +176,7 @@ export function MeetingCreatedPage() {
         )}
 
         {status === 'idle' && !inviteCode && (
-          <div className={styles.stateError}>
-            초대코드를 불러오지 못했습니다.
-          </div>
+          <div className={styles.stateError}>초대코드를 불러오지 못했습니다.</div>
         )}
       </div>
     </div>
