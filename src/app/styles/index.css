@@ -1,30 +1,23 @@
 :root {
   color-scheme: light;
-  font-family: "Space Grotesk", "IBM Plex Sans", "Segoe UI", sans-serif;
-  line-height: 1.4;
+  font-family: "Pretendard", "SUIT", "Noto Sans KR", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  line-height: 1.5;
   font-weight: 400;
-  color: #101828;
-  background-color: #f8f3e8;
+  color: #1f1b16;
+  background-color: #f7f4ef;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --bg-1: #f8f3e8;
-  --bg-2: #eef3ff;
-  --bg-3: #f1fff4;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: #ffffff;
-  --border: rgba(16, 24, 40, 0.12);
-  --shadow: rgba(15, 23, 42, 0.12);
-  --accent: #ff7a45;
-  --accent-strong: #d9480f;
-  --ink: #101828;
-  --muted: #475467;
+  --bg: #f7f4ef;
+  --brand: #1f1b16;
+  --brand-soft: #fff1cc;
+  --ink: #1f1b16;
+  --muted: #6f655b;
+  --stroke: #e6ded4;
 }
 
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
 
@@ -32,20 +25,13 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(
-      900px 500px at 15% -10%,
-      rgba(255, 122, 69, 0.2),
-      transparent 60%
-    ),
-    radial-gradient(
-      700px 500px at 85% 10%,
-      rgba(72, 158, 255, 0.18),
-      transparent 58%
-    ),
-    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%);
-  background-attachment: fixed;
   color: var(--ink);
+  background:
+    radial-gradient(800px 400px at 5% 0%, rgba(255, 228, 161, 0.35), transparent 60%),
+    radial-gradient(700px 380px at 95% 10%, rgba(255, 185, 122, 0.25), transparent 60%),
+    radial-gradient(600px 300px at 30% 100%, rgba(233, 210, 165, 0.22), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 #root {
