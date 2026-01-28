@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { useEffect, useMemo, type ReactElement } from 'react'
+import { useAuth } from '@/app/providers/auth-context'
 import { navigate, usePathname } from '@/shared/lib/navigation'
 import { type MemberStatus } from '@/shared/lib/api'
 import { LandingPage } from '@/pages/landing'
@@ -16,7 +16,7 @@ const statusRoute: Record<MemberStatus, string> = {
   DELETED: '/blocked',
 }
 
-const routeMap: Record<string, JSX.Element> = {
+const routeMap: Record<string, ReactElement> = {
   '/': <LandingPage />,
   '/terms': <TermsPage />,
   '/preferences': <PreferencesPage />,

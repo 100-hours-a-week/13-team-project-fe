@@ -9,7 +9,7 @@ import {
   withdrawMember,
   type PreferenceChoice,
 } from '@/shared/lib/api'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 
