@@ -1,6 +1,6 @@
 import styles from './MainTempPage.module.css'
 import { useState } from 'react'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { useAuth } from '@/app/providers/auth-context'
 import { ApiError, logout, withdrawMember } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
 

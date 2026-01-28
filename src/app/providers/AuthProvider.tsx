@@ -1,23 +1,6 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-import { ApiError, getMemberMe, initCsrfToken, type MemberProfile, type MemberStatus } from '@/shared/lib/api'
-
-type AuthContextValue = {
-  member: MemberProfile | null
-  status: MemberStatus | null
-  loading: boolean
-  refresh: () => Promise<void>
-  setMember: (member: MemberProfile | null) => void
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { type PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react'
+import { ApiError, getMemberMe, initCsrfToken, type MemberProfile } from '@/shared/lib/api'
+import { AuthContext, type AuthContextValue } from '@/app/providers/auth-context'
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [member, setMember] = useState<MemberProfile | null>(null)
@@ -54,12 +37,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return context
 }

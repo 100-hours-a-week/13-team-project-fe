@@ -9,7 +9,7 @@ import {
   type AgreementSummary,
 } from '@/shared/lib/api'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 
 export function TermsPage() {

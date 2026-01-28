@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { useAuth } from '@/app/providers/auth-context'
 import { navigate, usePathname } from '@/shared/lib/navigation'
 import { type MemberStatus } from '@/shared/lib/api'
 import { LandingPage } from '@/pages/landing'
