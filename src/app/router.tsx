@@ -5,13 +5,14 @@ import { type MemberStatus } from '@/shared/lib/api'
 import { LandingPage } from '@/pages/landing'
 import { TermsPage } from '@/pages/terms'
 import { PreferencesPage } from '@/pages/preferences'
-import { MainPage } from '@/pages/main'
+import { MainTempPage } from '@/pages/main-temp'
+import { MyPage } from '@/pages/mypage'
 import { BlockedPage } from '@/pages/blocked'
 
 const statusRoute: Record<MemberStatus, string> = {
   PENDING: '/terms',
   ONBOARDING: '/preferences',
-  ACTIVE: '/main',
+  ACTIVE: '/main-temp',
   DELETED: '/blocked',
 }
 
@@ -19,11 +20,14 @@ const routeMap: Record<string, JSX.Element> = {
   '/': <LandingPage />,
   '/terms': <TermsPage />,
   '/preferences': <PreferencesPage />,
-  '/main': <MainPage />,
+  '/main': <MainTempPage />,
+  '/main-temp': <MainTempPage />,
+  '/mypage': <MyPage />,
   '/blocked': <BlockedPage />,
 }
 
-const publicPaths = new Set(['/','/terms','/preferences'])
+const publicPaths = new Set(['/', '/terms', '/preferences'])
+const tempPaths = new Set(['/main', '/main-temp', '/mypage'])
 
 function LoadingScreen() {
   return (
@@ -82,6 +86,9 @@ export function AppRouter() {
 
     if (status) {
       const allowed = statusRoute[status]
+      if (status === 'ACTIVE' && tempPaths.has(pathname)) {
+        return
+      }
       if (pathname !== allowed) {
         navigate(allowed, { replace: true })
       }

@@ -1,10 +1,10 @@
-import styles from './MainPage.module.css'
+import styles from './MainTempPage.module.css'
 import { useState } from 'react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { ApiError, logout, withdrawMember } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
 
-export function MainPage() {
+export function MainTempPage() {
   const { member, setMember } = useAuth()
   const [withdrawing, setWithdrawing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,12 +44,24 @@ export function MainPage() {
     }
   }
 
+  const handleGoMeetingCreate = () => {
+    navigate('/meetings/new')
+  }
+
+  const handleGoMeetingCreated = () => {
+    navigate('/meetings/1/created')
+  }
+
+  const handleGoMyPage = () => {
+    navigate('/mypage')
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1>맛침반 메인</h1>
-          <p>모임이 시작되면 여기서 모든 흐름을 확인할 수 있어요.</p>
+          <h1>맛침반 메인 (임시)</h1>
+          <p>팀원 메인과 병합 전까지 쓰는 임시 메인입니다.</p>
         </div>
         <div className={styles.actions}>
           <button className={styles.logout} onClick={handleLogout}>
@@ -79,6 +91,24 @@ export function MainPage() {
               <strong>가입일</strong>
               <span>{member?.createdAt ? new Date(member.createdAt).toLocaleDateString() : '-'}</span>
             </div>
+          </div>
+        </div>
+
+        <div className={styles.testLinks}>
+          <div>
+            <h3>모임 테스트</h3>
+            <p>미팅 관련 페이지로 바로 이동해 테스트합니다.</p>
+          </div>
+          <div className={styles.testButtons}>
+            <button type="button" onClick={handleGoMeetingCreate}>
+              모임 생성 페이지
+            </button>
+            <button type="button" onClick={handleGoMeetingCreated}>
+              모임 생성 완료 (테스트)
+            </button>
+            <button type="button" onClick={handleGoMyPage}>
+              마이페이지
+            </button>
           </div>
         </div>
 
