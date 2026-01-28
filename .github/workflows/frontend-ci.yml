@@ -47,6 +47,8 @@ jobs:
 
       - name: Build
         id: build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: npm run build --if-present
 
       # E2E 테스트 도입 시 활성화
