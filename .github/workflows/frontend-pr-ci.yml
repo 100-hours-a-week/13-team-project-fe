@@ -3,6 +3,12 @@ name: FE PR CI PIPELINE
 on:
   pull_request:
     branches: [develop, main]
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
+      - "docs/**"
+      - "**/*.md"
 
 permissions:
   contents: read
