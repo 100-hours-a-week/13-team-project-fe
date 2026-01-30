@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import styles from './MainPage.module.css'
 import { getMyMeetings, participateMeeting } from '@/entities/meeting'
@@ -13,7 +13,7 @@ type NavItem = {
   key: 'event' | 'ranking' | 'home' | 'notification' | 'my'
   label: string
   path: string
-  icon: JSX.Element
+  icon: ReactNode
   disabled?: boolean
 }
 
