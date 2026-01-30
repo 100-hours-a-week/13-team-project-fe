@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
@@ -52,7 +52,6 @@ function formatDateTime(value: string) {
 export function MeetingDetailPage() {
   const { meetingId } = useParams()
   const { member } = useAuth()
-  const { search } = useLocation()
   const [data, setData] = useState<MeetingDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -88,15 +87,9 @@ export function MeetingDetailPage() {
 
   const isHost = useMemo(() => {
     if (!data) return false
-    const params = new URLSearchParams(search)
-    const mockMemberId = Number(params.get('memberId'))
-    // TODO: 인증 복구 후 mockMemberId 제거하고 member 기준으로 판단
-    const currentMemberId = Number.isNaN(mockMemberId)
-      ? member?.memberId
-      : mockMemberId
-    if (!currentMemberId) return false
-    return data.hostMemberId === currentMemberId
-  }, [data, member, search])
+    if (!member?.memberId) return false
+    return data.hostMemberId === member.memberId
+  }, [data, member])
 
   const canEditMeeting = Boolean(data && isHost && data.currentVoteId === null)
   const isAllParticipantsReady = Boolean(
