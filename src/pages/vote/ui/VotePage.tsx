@@ -64,8 +64,9 @@ export function VotePage() {
         if (!active) return
         setError(err instanceof Error ? err.message : '투표 후보를 불러오지 못했어요.')
       } finally {
-        if (!active) return
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 

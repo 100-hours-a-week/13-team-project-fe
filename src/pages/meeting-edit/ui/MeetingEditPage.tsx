@@ -200,11 +200,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function getStringField(obj: Record<string, unknown>, key: string): string | null {
-  const v = obj[key]
-  return typeof v === 'string' ? v : null
-}
-
 export function MeetingEditPage() {
   const { meetingId } = useParams()
   const [step, setStep] = useState<Step>(1)

@@ -14,6 +14,7 @@ export function VoteWaitPage() {
 
   useEffect(() => {
     if (!Number.isFinite(parsedMeetingId) || !Number.isFinite(parsedVoteId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError('대기 정보를 불러올 수 없어요.')
       setLoading(false)
       return

@@ -74,8 +74,9 @@ export function MeetingDetailPage() {
         if (!active) return
         setError(err instanceof Error ? err.message : '모임 상세 정보를 불러오지 못했습니다.')
       } finally {
-        if (!active) return
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
