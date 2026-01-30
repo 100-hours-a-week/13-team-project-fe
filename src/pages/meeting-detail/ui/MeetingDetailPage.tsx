@@ -88,15 +88,9 @@ export function MeetingDetailPage() {
 
   const isHost = useMemo(() => {
     if (!data) return false
-    const params = new URLSearchParams(search)
-    const mockMemberId = Number(params.get('memberId'))
-    // TODO: 인증 복구 후 mockMemberId 제거하고 member 기준으로 판단
-    const currentMemberId = Number.isNaN(mockMemberId)
-      ? member?.memberId
-      : mockMemberId
-    if (!currentMemberId) return false
-    return data.hostMemberId === currentMemberId
-  }, [data, member, search])
+    if (!member?.memberId) return false
+    return data.hostMemberId === member.memberId
+  }, [data, member])
 
   const canEditMeeting = Boolean(data && isHost && data.currentVoteId === null)
   const isAllParticipantsReady = Boolean(
