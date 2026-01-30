@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './MeetingCreatePage.module.css'
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 
 declare global {
   interface Window {
@@ -565,7 +565,7 @@ export function MeetingCreatePage() {
       setIsSubmitting(true)
       const data: unknown = await request('/api/v1/meetings', {
         method: 'POST',
-        body: payload,
+        body: JSON.stringify(payload),
       })
 
       let meetingId: string | number | null = null

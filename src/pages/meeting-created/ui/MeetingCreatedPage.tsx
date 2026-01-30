@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import styles from './MeetingCreatedPage.module.css'
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 
 type InviteResponse = {
   meetingId: number

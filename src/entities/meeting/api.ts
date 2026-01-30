@@ -1,10 +1,10 @@
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 import type { MyMeetingsResponse, ParticipateMeetingResponse } from './types'
 
 export async function participateMeeting(inviteCode: string) {
   return request<ParticipateMeetingResponse>('/api/v1/participate_meetings', {
     method: 'POST',
-    body: { inviteCode },
+    body: JSON.stringify({ inviteCode }),
   })
 }
 

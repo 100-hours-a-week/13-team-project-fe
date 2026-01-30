@@ -1,4 +1,4 @@
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 import type {
   CreateVoteResponse,
   FinalSelectionRequest,
@@ -22,7 +22,7 @@ export async function submitVote(
 ) {
   return request<void>(`/api/v1/meetings/${meetingId}/votes/${voteId}/submissions`, {
     method: 'POST',
-    body: payload,
+    body: JSON.stringify(payload),
   })
 }
 
@@ -53,7 +53,7 @@ export async function finalizeSelection(
     `/api/v1/meetings/${meetingId}/votes/${voteId}/final-selection`,
     {
       method: 'POST',
-      body: payload,
+      body: JSON.stringify(payload),
     },
   )
 }

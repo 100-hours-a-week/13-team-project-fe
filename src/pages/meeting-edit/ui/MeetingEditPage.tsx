@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './MeetingEditPage.module.css'
 import { navigate } from '@/shared/lib/navigation'
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 
 declare global {
   interface Window {
@@ -604,7 +604,7 @@ export function MeetingEditPage() {
       setIsSubmitting(true)
       await request(`/api/v1/meetings/${meetingId}`, {
         method: 'PATCH',
-        body: payload,
+        body: JSON.stringify(payload),
       })
 
       navigate(`/meetings/${meetingId}`)
