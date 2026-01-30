@@ -31,9 +31,6 @@ const statusRoute: Record<MemberStatus, string> = {
 
 const publicPaths = new Set(['/', '/terms', '/preferences'])
 const tempPaths = new Set([
-  '/',
-  '/terms',
-  '/preferences',
   '/main',
   '/main-temp',
   '/event',
