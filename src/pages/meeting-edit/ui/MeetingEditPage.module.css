@@ -1,0 +1,282 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  color: #5f6b7a;
+  margin: 0;
+}
+
+.stepTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.step,
+.activeStep {
+  flex: 1;
+  padding: 12px;
+  border-radius: 999px;
+  border: 1px solid #d7dde5;
+  background: #f6f7f9;
+  font-weight: 600;
+  color: #6c7685;
+}
+
+.activeStep {
+  background: #1e2a3a;
+  border-color: #1e2a3a;
+  color: #fff;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #e2e7ee;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(30, 42, 58, 0.08);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d5dbe3;
+  font-size: 15px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.row .input {
+  flex: 1;
+}
+
+.error {
+  color: #d32f2f;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.primaryButton,
+.secondaryButton {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: #1e2a3a;
+  color: #fff;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  background: #eef1f5;
+  color: #1e2a3a;
+}
+
+.checkboxGroup {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 10;
+}
+
+.modal {
+  width: min(720px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map {
+  width: 100%;
+  height: 360px;
+  min-height: 280px;
+  border-radius: 16px;
+  background: #f0f2f5;
+  flex-shrink: 0;
+  touch-action: pan-x pan-y;
+}
+
+.modalInfo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  font-size: 14px;
+  color: #3f4b5c;
+}
+
+.modalError {
+  color: #d32f2f;
+  font-size: 13px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modalFallback {
+  padding: 16px;
+  border-radius: 12px;
+  background: #f6f7f9;
+  color: #5f6b7a;
+}
+
+.searchRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.searchList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow: auto;
+  border: 1px solid #e2e7ee;
+  border-radius: 12px;
+  display: block;
+}
+
+.searchItem {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.searchItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.searchItem:hover {
+  background: #f6f7f9;
+}
+
+.searchName {
+  font-weight: 600;
+  color: #1e2a3a;
+}
+
+.searchAddress {
+  font-size: 12px;
+  color: #6c7685;
+}
+
+.searchEmpty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #6c7685;
+}
+
+.searchDisabled {
+  font-size: 12px;
+  color: #c92a2a;
+}
+
+.outOfService {
+  font-size: 12px;
+  color: #c92a2a;
+}
+
+.modalStatus {
+  font-size: 12px;
+  color: #5f6b7a;
+}

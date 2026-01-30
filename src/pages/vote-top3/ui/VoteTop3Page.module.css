@@ -1,0 +1,246 @@
+.page {
+  min-height: 100vh;
+  background: #f5f6f8;
+  padding: 40px clamp(20px, 8vw, 80px) 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  stroke: #1f2937;
+  stroke-width: 2;
+  fill: none;
+}
+
+.title {
+  font-size: 20px;
+  color: #111827;
+  margin: 0;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #111827;
+  display: grid;
+  place-items: center;
+}
+
+.checkIcon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  stroke-width: 2.5;
+  fill: none;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.heroText {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.note {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card,
+.cardSelected {
+  border: none;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  position: relative;
+}
+
+.cardSelected {
+  outline: 2px solid #111827;
+}
+
+.rankBadge {
+  align-self: flex-start;
+  background: #111827;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cardContent {
+  display: flex;
+  gap: 14px;
+}
+
+.imageWrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.imageWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  margin: 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.category {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.categoryInline {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.meta {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.address {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.likeBox {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.likeBox svg {
+  width: 26px;
+  height: 26px;
+  fill: #ef4444;
+}
+
+.actions {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.primaryButton {
+  background: #111827;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  background: #eef1f5;
+  color: #111827;
+}

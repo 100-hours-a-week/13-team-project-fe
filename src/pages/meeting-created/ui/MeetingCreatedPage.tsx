@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import styles from './MeetingCreatedPage.module.css'
+import { request } from '@/shared/api/httpClient'
 
 type InviteResponse = {
   meetingId: number
   inviteCode: string
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function getMessageFromUnknown(value: unknown): string | null {
-  if (!isRecord(value)) return null
-  const msg = value['message']
-  return typeof msg === 'string' ? msg : null
 }
 
 export function MeetingCreatedPage() {
@@ -40,18 +31,7 @@ export function MeetingCreatedPage() {
       setStatus('loading')
       setMessage(null)
 
-      const response = await fetch(`/api/v1/meetings/${meetingId}/invitation`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        credentials: 'include',
-      })
-
-      const data: unknown = await response.json().catch(() => null)
-
-      if (!response.ok) {
-        const serverMsg = getMessageFromUnknown(data)
-        throw new Error(serverMsg ?? '초대코드를 불러오지 못했습니다.')
-      }
+      const data: unknown = await request(`/api/v1/meetings/${meetingId}/invite-code`)
 
       const typed = data as InviteResponse
       if (!typed?.inviteCode) {
