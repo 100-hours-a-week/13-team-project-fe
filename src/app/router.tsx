@@ -30,7 +30,6 @@ const statusRoute: Record<MemberStatus, string> = {
 }
 
 const publicPaths = new Set(['/', '/terms', '/preferences'])
-const tempPaths = new Set(['/main', '/main-temp', '/mypage'])
 
 function LoadingScreen() {
   return (
@@ -87,9 +86,6 @@ export function AppRouter() {
 
     if (status) {
       const allowed = statusRoute[status]
-      if (status === 'ACTIVE' && tempPaths.has(pathname)) {
-        return
-      }
       if (pathname !== allowed) {
         return
       }
@@ -107,9 +103,7 @@ export function AppRouter() {
   }
 
   if (status && pathname !== statusRoute[status]) {
-    if (!(status === 'ACTIVE' && tempPaths.has(pathname))) {
-      return <Navigate to={statusRoute[status]} replace />
-    }
+    return <Navigate to={statusRoute[status]} replace />
   }
 
   return (
