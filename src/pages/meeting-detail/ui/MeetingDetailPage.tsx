@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
@@ -52,7 +52,6 @@ function formatDateTime(value: string) {
 export function MeetingDetailPage() {
   const { meetingId } = useParams()
   const { member } = useAuth()
-  const { search } = useLocation()
   const [data, setData] = useState<MeetingDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
