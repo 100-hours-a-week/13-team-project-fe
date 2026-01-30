@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import styles from './MeetingCreatePage.module.css'
+import { useParams } from 'react-router-dom'
+import styles from './MeetingEditPage.module.css'
+import { navigate } from '@/shared/lib/navigation'
 import { request } from '@/shared/api/httpClient'
 
 declare global {
@@ -104,8 +106,8 @@ type KakaoPlace = {
   place_name: string
   road_address_name?: string
   address_name?: string
-  x: string // lng
-  y: string // lat
+  x: string
+  y: string
 }
 
 type KakaoPlaces = {
@@ -113,6 +115,22 @@ type KakaoPlaces = {
     keyword: string,
     callback: (data: KakaoPlace[], status: string) => void,
   ) => void
+}
+
+type MeetingDetailResponse = {
+  meetingId: number
+  title: string
+  scheduledAt: string
+  voteDeadlineAt: string
+  locationAddress: string
+  locationLat: number
+  locationLng: number
+  targetHeadcount: number
+  searchRadiusM: number
+  swipeCount: number
+  exceptMeat: boolean
+  exceptBar: boolean
+  quickMeeting: boolean
 }
 
 let kakaoSdkPromise: Promise<void> | null = null
@@ -154,6 +172,12 @@ function toPayloadDate(value: string) {
   return value
 }
 
+function fromApiDate(value: string) {
+  if (!value) return ''
+  if (value.length >= 16) return value.slice(0, 16)
+  return value
+}
+
 function isFuture(value: string) {
   if (!value) return false
   const date = new Date(value)
@@ -181,16 +205,8 @@ function getStringField(obj: Record<string, unknown>, key: string): string | nul
   return typeof v === 'string' ? v : null
 }
 
-function getIdField(obj: Record<string, unknown>): string | number | null {
-  const meetingId = obj['meetingId']
-  const id = obj['id']
-
-  if (typeof meetingId === 'string' || typeof meetingId === 'number') return meetingId
-  if (typeof id === 'string' || typeof id === 'number') return id
-  return null
-}
-
-export function MeetingCreatePage() {
+export function MeetingEditPage() {
+  const { meetingId } = useParams()
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormState>({
     title: '',
@@ -208,6 +224,7 @@ export function MeetingCreatePage() {
   })
   const [errors, setErrors] = useState<Errors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isStep1Valid, setIsStep1Valid] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
   const [modalStatus, setModalStatus] = useState<string | null>(null)
@@ -216,10 +233,9 @@ export function MeetingCreatePage() {
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchAttempted, setIsSearchAttempted] = useState(false)
   const [isOutOfService, setIsOutOfService] = useState(false)
-  const [selectedPoint, setSelectedPoint] = useState<{
-    lat: number
-    lng: number
-  } | null>(null)
+  const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number } | null>(
+    null,
+  )
 
   const mapRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<KakaoMap | null>(null)
@@ -230,75 +246,77 @@ export function MeetingCreatePage() {
 
   const appKey = import.meta.env.VITE_KAKAO_MAP_APP_KEY as string | undefined
 
-  const step1Errors = useMemo(() => {
-    const next: Errors = {}
+  const isStep2Valid = useMemo(() => {
+    return (
+      !!form.targetHeadcount &&
+      Number(form.targetHeadcount) >= 2 &&
+      !!form.searchRadiusKm &&
+      Number(form.searchRadiusKm) > 0 &&
+      !!form.voteDeadlineAt &&
+      isFuture(form.voteDeadlineAt) &&
+      !!form.swipeCount &&
+      Number(form.swipeCount) > 0
+    )
+  }, [form])
+
+  useEffect(() => {
+    const nextErrors: Errors = {}
     if (!form.title.trim()) {
-      next.title = '제목을 입력해 주세요.'
+      nextErrors.title = '모임 제목을 입력해주세요.'
     } else if (!TITLE_REGEX.test(form.title.trim())) {
-      next.title = '2~20자, 허용된 문자만 입력해 주세요.'
+      nextErrors.title = '2~20자, 한글/영문/숫자/특수문자만 가능합니다.'
     }
 
     if (!form.scheduledAt) {
-      next.scheduledAt = '모임 날짜/시간을 입력해 주세요.'
+      nextErrors.scheduledAt = '모임 시간을 입력해주세요.'
     } else if (!isNotPast(form.scheduledAt)) {
-      next.scheduledAt = '과거 시간은 선택할 수 없습니다.'
+      nextErrors.scheduledAt = '모임 시간은 현재 이후여야 합니다.'
     }
 
-    if (!form.address || !form.lat || !form.lng) {
-      next.address = '서비스 지역에서 장소를 선택해 주세요.'
+    if (!form.address) {
+      nextErrors.address = '모임 장소를 선택해주세요.'
     }
 
-    return next
-  }, [form.address, form.lat, form.lng, form.scheduledAt, form.title])
-
-  const step2Errors = useMemo(() => {
-    const next: Errors = {}
-
-    const targetHeadcount = Number(form.targetHeadcount)
-    if (!form.targetHeadcount) {
-      next.targetHeadcount = '인원을 입력해 주세요.'
-    } else if (!Number.isFinite(targetHeadcount) || targetHeadcount < 2) {
-      next.targetHeadcount = '인원은 최소 2명입니다.'
-    }
-
-    const searchRadiusKm = Number(form.searchRadiusKm)
-    const searchRadiusM = searchRadiusKm * 1000
-    if (!form.searchRadiusKm) {
-      next.searchRadiusKm = '검색 반경을 입력해 주세요.'
-    } else if (
-      !Number.isFinite(searchRadiusKm) ||
-      searchRadiusM < 1 ||
-      searchRadiusM > 3000
-    ) {
-      next.searchRadiusKm = '검색 반경은 1~3000m 범위입니다.'
-    }
-
-    if (!form.voteDeadlineAt) {
-      next.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
-    } else if (!isFuture(form.voteDeadlineAt)) {
-      next.voteDeadlineAt = '현재보다 미래 시간이어야 합니다.'
-    }
-
-    const swipeCount = Number(form.swipeCount)
-    if (!form.swipeCount) {
-      next.swipeCount = '스와이프 수를 입력해 주세요.'
-    } else if (!Number.isFinite(swipeCount) || swipeCount < 1 || swipeCount > 15) {
-      next.swipeCount = '스와이프 수는 1~15입니다.'
-    }
-
-    return next
-  }, [form.searchRadiusKm, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
-
-  const isStep1Valid = useMemo(() => Object.keys(step1Errors).length === 0, [step1Errors])
-  const isStep2Valid = useMemo(() => Object.keys(step2Errors).length === 0, [step2Errors])
+    setErrors(nextErrors)
+    setIsStep1Valid(Object.keys(nextErrors).length === 0)
+  }, [form.address, form.scheduledAt, form.title])
 
   useEffect(() => {
-    if (step === 1) {
-      setErrors(step1Errors)
-    } else {
-      setErrors({ ...step1Errors, ...step2Errors })
+    if (!meetingId) return
+    let active = true
+
+    const fetchDetail = async () => {
+      try {
+        const detail = await request<MeetingDetailResponse>(`/api/v1/meetings/${meetingId}`)
+        if (!active) return
+        setForm((prev) => ({
+          ...prev,
+          title: detail.title ?? '',
+          scheduledAt: fromApiDate(detail.scheduledAt),
+          address: detail.locationAddress ?? '',
+          lat: detail.locationLat?.toString() ?? '',
+          lng: detail.locationLng?.toString() ?? '',
+          targetHeadcount: detail.targetHeadcount?.toString() ?? '',
+          searchRadiusKm: detail.searchRadiusM
+            ? (detail.searchRadiusM / 1000).toString()
+            : '',
+          voteDeadlineAt: fromApiDate(detail.voteDeadlineAt),
+          exceptMeat: Boolean(detail.exceptMeat),
+          exceptBar: Boolean(detail.exceptBar),
+          swipeCount: detail.swipeCount?.toString() ?? '',
+          quickMeeting: Boolean(detail.quickMeeting),
+        }))
+      } catch (error) {
+        if (!active) return
+        setErrors({ title: error instanceof Error ? error.message : '모임 정보를 불러오지 못했습니다.' })
+      }
     }
-  }, [step, step1Errors, step2Errors])
+
+    void fetchDetail()
+    return () => {
+      active = false
+    }
+  }, [meetingId])
 
   const createBounds = () => {
     const maps = window.kakao?.maps
@@ -361,29 +379,39 @@ export function MeetingCreatePage() {
     setSelectedPoint(null)
 
     loadKakaoSdk(appKey)
-      .then(() => {
-        if (!mapRef.current) return
+      .then(() =>
+        window.kakao?.maps?.load(() => {
+          if (!mapRef.current) return
 
-        const maps = window.kakao?.maps
-        if (!maps) throw new Error('Kakao maps not loaded')
+          const maps = window.kakao?.maps
+          if (!maps) throw new Error('Kakao maps not loaded')
 
-        maps.load(() => {
           const bounds = createBounds()
           boundsRef.current = bounds
 
-          const sw = bounds.getSouthWest()
-          const ne = bounds.getNorthEast()
-          const center = new maps.LatLng(
-            (sw.getLat() + ne.getLat()) / 2,
-            (sw.getLng() + ne.getLng()) / 2,
-          )
+          const initialLat = Number(form.lat)
+          const initialLng = Number(form.lng)
+          const hasInitial =
+            Number.isFinite(initialLat) &&
+            Number.isFinite(initialLng) &&
+            bounds.contain(new maps.LatLng(initialLat, initialLng))
+
+          const center = hasInitial
+            ? new maps.LatLng(initialLat, initialLng)
+            : (() => {
+                const sw = bounds.getSouthWest()
+                const ne = bounds.getNorthEast()
+                return new maps.LatLng(
+                  (sw.getLat() + ne.getLat()) / 2,
+                  (sw.getLng() + ne.getLng()) / 2,
+                )
+              })()
 
           const map = new maps.Map(mapRef.current as HTMLElement, {
             center,
             level: 4,
           })
           mapInstanceRef.current = map
-
           geocoderRef.current = new maps.services.Geocoder()
           placesRef.current = new maps.services.Places()
 
@@ -393,7 +421,12 @@ export function MeetingCreatePage() {
           })
           markerRef.current = marker
           marker.setMap(map)
-          marker.setVisible(false)
+          marker.setVisible(hasInitial)
+
+          if (hasInitial) {
+            setSelectedPoint({ lat: initialLat, lng: initialLng })
+            setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
+          }
 
           map.setBounds(bounds)
           map.relayout()
@@ -444,12 +477,12 @@ export function MeetingCreatePage() {
               map.setBounds(bounds)
             }
           })
-        })
-      })
+        }),
+      )
       .catch(() => {
         setModalError('지도를 불러오지 못했습니다.')
       })
-  }, [appKey, isModalOpen])
+  }, [appKey, form.lat, form.lng, isModalOpen])
 
   const updateField = (key: keyof FormState, value: string | boolean) => {
     setForm((prev) => ({
@@ -459,14 +492,13 @@ export function MeetingCreatePage() {
   }
 
   const handleNextStep = () => {
-    if (!isStep1Valid) {
-      setErrors(step1Errors)
-      return
-    }
+    if (!isStep1Valid) return
     setStep(2)
   }
 
-  const handlePrevStep = () => setStep(1)
+  const handlePrevStep = () => {
+    setStep(1)
+  }
 
   const handleConfirmLocation = () => {
     if (!selectedPoint) {
@@ -523,9 +555,7 @@ export function MeetingCreatePage() {
     const lng = Number(place.x)
     const bounds = boundsRef.current
     const maps = window.kakao?.maps
-    if (!maps) return
-
-    if (bounds && !bounds.contain(new maps.LatLng(lat, lng))) {
+    if (maps && bounds && !bounds.contain(new maps.LatLng(lat, lng))) {
       setModalStatus('서비스 지역이 아닙니다.')
       setIsOutOfService(true)
       return
@@ -536,8 +566,15 @@ export function MeetingCreatePage() {
     setIsOutOfService(false)
   }
 
+  const handleOpenMap = () => {
+    setIsModalOpen(true)
+    requestAnimationFrame(() => {
+      mapInstanceRef.current?.relayout()
+    })
+  }
+
   const handleSubmit = async () => {
-    const nextErrors = { ...step1Errors, ...step2Errors }
+    const nextErrors = { ...errors }
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
 
@@ -550,6 +587,8 @@ export function MeetingCreatePage() {
       }))
       return
     }
+
+    if (!meetingId) return
 
     const payload = {
       title: form.title.trim(),
@@ -568,25 +607,16 @@ export function MeetingCreatePage() {
 
     try {
       setIsSubmitting(true)
-      const data: unknown = await request('/api/v1/meetings', {
-        method: 'POST',
+      await request(`/api/v1/meetings/${meetingId}`, {
+        method: 'PATCH',
         body: payload,
       })
 
-      let meetingId: string | number | null = null
-      if (isRecord(data)) {
-        meetingId = getIdField(data)
-      }
-
-      if (!meetingId) {
-        throw new Error('모임 ID를 확인할 수 없습니다.')
-      }
-
-      window.location.assign(`/meetings/${meetingId}/created`)
+      navigate(`/meetings/${meetingId}`)
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
-        title: error instanceof Error ? error.message : '모임 생성에 실패했습니다.',
+        title: error instanceof Error ? error.message : '모임 수정에 실패했습니다.',
       }))
     } finally {
       setIsSubmitting(false)
@@ -596,8 +626,8 @@ export function MeetingCreatePage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>모임 만들기</h1>
-        <p className={styles.subtitle}>필수 정보를 입력해 모임을 시작하세요.</p>
+        <h1 className={styles.title}>모임 수정</h1>
+        <p className={styles.subtitle}>필수 정보를 수정해 모임을 업데이트하세요.</p>
       </header>
 
       <div className={styles.stepTabs}>
@@ -656,7 +686,7 @@ export function MeetingCreatePage() {
               <button
                 className={styles.secondaryButton}
                 type="button"
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleOpenMap}
               >
                 위치 선택
               </button>
@@ -711,7 +741,7 @@ export function MeetingCreatePage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>투표 마감 시간</span>
+            <span className={styles.label}>투표 마감</span>
             <input
               className={styles.input}
               type="datetime-local"
@@ -738,30 +768,30 @@ export function MeetingCreatePage() {
             )}
           </label>
 
-          <div className={styles.checkboxGroup}>
-            <label className={styles.checkbox}>
+          <div className={styles.toggleRow}>
+            <label className={styles.toggle}>
               <input
                 type="checkbox"
                 checked={form.exceptMeat}
                 onChange={(event) => updateField('exceptMeat', event.target.checked)}
               />
-              고기 제외
+              <span>고깃집 제외</span>
             </label>
-            <label className={styles.checkbox}>
+            <label className={styles.toggle}>
               <input
                 type="checkbox"
                 checked={form.exceptBar}
                 onChange={(event) => updateField('exceptBar', event.target.checked)}
               />
-              술집 제외
+              <span>술집 제외</span>
             </label>
-            <label className={styles.checkbox}>
+            <label className={styles.toggle}>
               <input
                 type="checkbox"
                 checked={form.quickMeeting}
                 onChange={(event) => updateField('quickMeeting', event.target.checked)}
               />
-              빠른 모임
+              <span>퀵 모임</span>
             </label>
           </div>
 
@@ -771,7 +801,7 @@ export function MeetingCreatePage() {
               type="button"
               onClick={handlePrevStep}
             >
-              Step 1로
+              이전으로
             </button>
             <button
               className={styles.primaryButton}
@@ -779,7 +809,7 @@ export function MeetingCreatePage() {
               onClick={handleSubmit}
               disabled={!isStep2Valid || isSubmitting}
             >
-              {isSubmitting ? '생성 중...' : '모임 생성'}
+              {isSubmitting ? '수정 중...' : '모임 수정하기'}
             </button>
           </div>
         </section>
@@ -860,16 +890,12 @@ export function MeetingCreatePage() {
                             onClick={() => handleSelectSearchResult(place)}
                             disabled={!allowed}
                           >
-                            <span className={styles.searchName}>
-                              {place.place_name}
-                            </span>
+                            <span className={styles.searchName}>{place.place_name}</span>
                             <span className={styles.searchAddress}>
                               {place.road_address_name || place.address_name}
                             </span>
                             {!allowed && (
-                              <span className={styles.searchDisabled}>
-                                서비스 지역 아님
-                              </span>
+                              <span className={styles.searchDisabled}>서비스 지역 아님</span>
                             )}
                           </button>
                         </li>

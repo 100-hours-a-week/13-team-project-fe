@@ -1,0 +1,220 @@
+.page {
+  min-height: 100vh;
+  background: #f5f6f8;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 28px;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+  stroke: #1f2937;
+  stroke-width: 2;
+  fill: none;
+}
+
+.progressWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressText {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.progressBar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(120deg, #ff7a7a, #ffb07a);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.note {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.cardArea {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: min(92vw, 360px);
+  height: 520px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  transition: transform 0.2s ease;
+}
+
+.imageArea {
+  flex: 0 0 66.6667%;
+  position: relative;
+  background: #111827;
+}
+
+.imageArea img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #f9fafb;
+  font-size: 14px;
+}
+
+.imageNav {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.imageButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  font-size: 18px;
+}
+
+.imageDots {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.dot,
+.dotActive {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.dotActive {
+  background: #ffffff;
+}
+
+.infoArea {
+  flex: 0 0 33.3333%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.restaurantName {
+  font-size: 20px;
+  margin: 0;
+  color: #111827;
+}
+
+.category {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.metaRow {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.address {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.actionButton,
+.undoButton {
+  min-width: 88px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  border: none;
+  font-size: 14px;
+}
+
+.actionButton {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.undoButton {
+  background: #1f2937;
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .card {
+    height: 500px;
+  }
+}
