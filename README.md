@@ -14,6 +14,11 @@ npm install
 npm run dev
 ```
 
+## Environment
+
+- `VITE_API_BASE_URL` (optional): API base URL (e.g. `http://localhost:8080`). Defaults to same origin.
+- `VITE_API_PROXY_TARGET` (optional, dev): Vite dev proxy target for `/api` (default `http://localhost:8080`).
+
 ## Scripts
 
 - `npm run dev`

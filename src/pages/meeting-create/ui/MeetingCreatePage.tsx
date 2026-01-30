@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './MeetingCreatePage.module.css'
+import { request } from '@/shared/api/httpClient'
 
 declare global {
   interface Window {
@@ -173,11 +174,6 @@ function toFixedNumber(value: string, fractionDigits: number) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
-}
-
-function getStringField(obj: Record<string, unknown>, key: string): string | null {
-  const v = obj[key]
-  return typeof v === 'string' ? v : null
 }
 
 function getIdField(obj: Record<string, unknown>): string | number | null {
@@ -567,23 +563,10 @@ export function MeetingCreatePage() {
 
     try {
       setIsSubmitting(true)
-      const response = await fetch('/api/v1/meetings', {
+      const data: unknown = await request('/api/v1/meetings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
+        body: payload,
       })
-
-      const data: unknown = await response.json().catch(() => null)
-
-      if (!response.ok) {
-        let msg = '모임 생성에 실패했습니다.'
-        if (isRecord(data)) {
-          const serverMsg = getStringField(data, 'message')
-          if (serverMsg) msg = serverMsg
-        }
-        throw new Error(msg)
-      }
 
       let meetingId: string | number | null = null
       if (isRecord(data)) {
