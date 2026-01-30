@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
-import { request } from '@/shared/api/httpClient'
+import { request } from '@/shared/lib/api'
 
 type MeetingDetailResponse = {
   meetingId: number

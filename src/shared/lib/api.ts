@@ -151,7 +151,7 @@ export async function initCsrfToken() {
   await ensureCsrfToken()
 }
 
-async function request<T>(path: string, options: ApiRequestOptions = {}) {
+export async function request<T>(path: string, options: ApiRequestOptions = {}) {
   const url = `${API_BASE}${path}`
   const method = (options.method ?? 'GET').toString().toUpperCase()
   const headers = new Headers(options.headers ?? {})
