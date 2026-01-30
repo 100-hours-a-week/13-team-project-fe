@@ -102,6 +102,10 @@ export function AppRouter() {
     return <Navigate to="/blocked" replace />
   }
 
+  if (status === 'ACTIVE' && pathname === '/') {
+    return <Navigate to="/main" replace />
+  }
+
   if (status && status !== 'ACTIVE' && pathname !== statusRoute[status]) {
     return <Navigate to={statusRoute[status]} replace />
   }
