@@ -13,6 +13,7 @@ import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
+import { BackButton } from '@/shared/ui/back-button'
 
 const dummyReviews = [
   {
@@ -200,7 +201,10 @@ export function MyPage() {
     return (
       <div className={styles.page}>
         <header className={styles.header}>
-          <h1>마이페이지</h1>
+          <div className={styles.titleRow}>
+            <BackButton />
+            <h1>마이페이지</h1>
+          </div>
         </header>
         <section className={styles.card}>
           <div className={styles.loginGate}>
@@ -219,7 +223,10 @@ export function MyPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1>마이페이지</h1>
+        <div className={styles.titleRow}>
+          <BackButton />
+          <h1>마이페이지</h1>
+        </div>
         <button className={styles.logout} onClick={handleLogout}>
           로그아웃
         </button>

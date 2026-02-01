@@ -1,9 +1,13 @@
 import styles from './BlockedPage.module.css'
 import { navigate } from '@/shared/lib/navigation'
+import { BackButton } from '@/shared/ui/back-button'
 
 export function BlockedPage() {
   return (
     <div className={styles.page}>
+      <header className={styles.header}>
+        <BackButton fallbackPath="/" />
+      </header>
       <div className={styles.card}>
         <span className={styles.badge}>접근 제한</span>
         <h1>계정이 비활성화되었습니다</h1>
