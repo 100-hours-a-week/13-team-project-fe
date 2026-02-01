@@ -71,7 +71,7 @@ export function MeetingDetailPage() {
         const payload = await request<MeetingDetailResponse>(`/api/v1/meetings/${meetingId}`)
         if (!active) return
         setData(payload)
-      } catch (err) {
+      } catch {
         if (!active) return
         setError(err instanceof Error ? err.message : '모임 상세 정보를 불러오지 못했습니다.')
       } finally {
@@ -189,7 +189,7 @@ export function MeetingDetailPage() {
       })
 
       navigate('/main')
-    } catch (err) {
+    } catch {
       setModalMessage(err instanceof Error ? err.message : '모임 떠나기에 실패했습니다.')
     } finally {
       setIsDeleting(false)
@@ -201,7 +201,7 @@ export function MeetingDetailPage() {
     try {
       await navigator.clipboard.writeText(data.inviteCode)
       setCopyNotice('모임 코드가 복사되었습니다.')
-    } catch (err) {
+    } catch {
       setCopyNotice('복사에 실패했어요. 다시 시도해 주세요.')
     }
   }
