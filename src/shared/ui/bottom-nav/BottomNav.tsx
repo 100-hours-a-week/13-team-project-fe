@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import styles from './BottomNav.module.css'
 import { navigate } from '@/shared/lib/navigation'
@@ -6,7 +7,7 @@ type NavItem = {
   key: 'event' | 'ranking' | 'home' | 'notification' | 'my'
   label: string
   path: string
-  icon: JSX.Element
+  icon: ReactNode
 }
 
 const navItems: NavItem[] = [
