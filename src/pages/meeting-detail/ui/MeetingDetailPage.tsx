@@ -56,7 +56,9 @@ export function MeetingDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [modalMessage, setModalMessage] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<'delete' | 'leave' | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [copyNotice, setCopyNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (!meetingId) return
@@ -166,9 +168,6 @@ export function MeetingDetailPage() {
 
   const handleDeleteMeeting = async () => {
     if (!data) return
-    const confirmed = window.confirm('모임을 삭제할까요? 삭제 후 복구할 수 없습니다.')
-    if (!confirmed) return
-
     try {
       setIsDeleting(true)
       await request<void>(`/api/v1/meetings/${data.meetingId}`, { method: 'DELETE' })
@@ -183,9 +182,6 @@ export function MeetingDetailPage() {
 
   const handleLeaveMeeting = async () => {
     if (!data) return
-    const confirmed = window.confirm('모임을 떠날까요? 다시 참여하려면 초대가 필요합니다.')
-    if (!confirmed) return
-
     try {
       setIsDeleting(true)
       await request<void>(`/api/v1/meetings/${data.meetingId}/members/me`, {
@@ -197,6 +193,16 @@ export function MeetingDetailPage() {
       setModalMessage(err instanceof Error ? err.message : '모임 떠나기에 실패했습니다.')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleCopyInviteCode = async () => {
+    if (!data?.inviteCode) return
+    try {
+      await navigator.clipboard.writeText(data.inviteCode)
+      setCopyNotice('모임 코드가 복사되었습니다.')
+    } catch (err) {
+      setCopyNotice('복사에 실패했어요. 다시 시도해 주세요.')
     }
   }
 
@@ -248,6 +254,19 @@ export function MeetingDetailPage() {
               <span className={styles.detailLabel}>투표 마감</span>
               <span className={styles.detailValue}>{formatDateTime(data.voteDeadlineAt)}</span>
             </div>
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>모임 코드</span>
+              <div className={styles.codeRow}>
+                <span className={styles.codeValue}>{data.inviteCode}</span>
+                <button
+                  type="button"
+                  className={styles.copyButton}
+                  onClick={handleCopyInviteCode}
+                >
+                  복사
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className={styles.participantsSection}>
@@ -287,10 +306,10 @@ export function MeetingDetailPage() {
               className={styles.secondaryAction}
               onClick={() => {
                 if (isHost) {
-                  void handleDeleteMeeting()
+                  setConfirmAction('delete')
                   return
                 }
-                void handleLeaveMeeting()
+                setConfirmAction('leave')
               }}
               disabled={isHost && isDeleting}
             >
@@ -310,6 +329,62 @@ export function MeetingDetailPage() {
           >
             <p className={styles.modalText}>{modalMessage}</p>
             <button type="button" className={styles.modalButton} onClick={() => setModalMessage(null)}>
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setConfirmAction(null)}>
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className={styles.modalText}>
+              {confirmAction === 'delete'
+                ? '모임을 삭제할까요? 삭제 후 복구할 수 없습니다.'
+                : '모임을 떠날까요? 다시 참여하려면 초대가 필요합니다.'}
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.modalCancel}
+                onClick={() => setConfirmAction(null)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.modalConfirm}
+                onClick={() => {
+                  if (confirmAction === 'delete') {
+                    void handleDeleteMeeting()
+                  } else {
+                    void handleLeaveMeeting()
+                  }
+                  setConfirmAction(null)
+                }}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {copyNotice && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setCopyNotice(null)}>
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className={styles.modalText}>{copyNotice}</p>
+            <button type="button" className={styles.modalButton} onClick={() => setCopyNotice(null)}>
               확인
             </button>
           </div>

@@ -238,7 +238,12 @@ export function VotePage() {
             <div className={styles.imageArea}>
               {images.length > 0 ? (
                 <>
-                  <img src={images[imageIndex]} alt={currentCandidate.restaurantName} />
+                  <img
+                    src={images[imageIndex]}
+                    alt={currentCandidate.restaurantName}
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
+                  />
                   {images.length > 1 && (
                     <div className={styles.imageNav}>
                       <button
