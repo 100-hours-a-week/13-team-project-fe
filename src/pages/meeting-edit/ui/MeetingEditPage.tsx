@@ -593,30 +593,6 @@ export function MeetingEditPage() {
     return next
   }
 
-  const handleDateChange = (
-    key: 'scheduledAt' | 'voteDeadlineAt',
-    date: string,
-    offset: number,
-  ) => {
-    const base = ensureDateTime(key, offset)
-    const parts = getDateParts(base)
-    const nextValue = composeDateTime(date, parts.hour, parts.minute)
-    updateField(key, nextValue)
-  }
-
-  const handleTimeChange = (
-    key: 'scheduledAt' | 'voteDeadlineAt',
-    field: 'hour' | 'minute',
-    value: string,
-    offset: number,
-  ) => {
-    const base = ensureDateTime(key, offset)
-    const parts = getDateParts(base)
-    const nextParts = { ...parts, [field]: value }
-    const nextValue = composeDateTime(nextParts.date, nextParts.hour, nextParts.minute)
-    updateField(key, nextValue)
-  }
-
   const hourOptions = useMemo(
     () => Array.from({ length: 24 }, (_, idx) => String(idx).padStart(2, '0')),
     [],
