@@ -71,7 +71,7 @@ export function MeetingDetailPage() {
         const payload = await request<MeetingDetailResponse>(`/api/v1/meetings/${meetingId}`)
         if (!active) return
         setData(payload)
-      } catch {
+      } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : '모임 상세 정보를 불러오지 못했습니다.')
       } finally {
@@ -173,7 +173,7 @@ export function MeetingDetailPage() {
       await request<void>(`/api/v1/meetings/${data.meetingId}`, { method: 'DELETE' })
 
       navigate('/main')
-    } catch {
+    } catch (err) {
       setModalMessage(err instanceof Error ? err.message : '모임 삭제에 실패했습니다.')
     } finally {
       setIsDeleting(false)
@@ -189,7 +189,7 @@ export function MeetingDetailPage() {
       })
 
       navigate('/main')
-    } catch {
+    } catch (err) {
       setModalMessage(err instanceof Error ? err.message : '모임 떠나기에 실패했습니다.')
     } finally {
       setIsDeleting(false)
