@@ -14,22 +14,25 @@
 }
 
 .backButton {
-  width: 40px;
-  height: 40px;
   border: none;
-  border-radius: 12px;
-  background: #ffffff;
+  background: var(--surface);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  color: var(--ink);
 }
 
 .backButton svg {
   width: 20px;
   height: 20px;
-  stroke: #1f2937;
+  stroke: currentColor;
   stroke-width: 2;
   fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .title {

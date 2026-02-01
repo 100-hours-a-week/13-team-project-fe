@@ -12,6 +12,7 @@ export type MyMeetingSummary = {
   currentVoteId: number | null
   voteState: string | null
   finalSelected: boolean
+  meetingStatus: 'READY' | 'VOTING' | 'DONE'
 }
 
 export type MyMeetingsResponse = {

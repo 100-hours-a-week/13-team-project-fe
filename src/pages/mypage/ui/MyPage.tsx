@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
+import { BottomNav } from '@/shared/ui/bottom-nav'
 
 const dummyReviews = [
   {
@@ -210,6 +211,7 @@ export function MyPage() {
             </button>
           </div>
         </section>
+        <BottomNav />
       </div>
     )
   }
@@ -366,6 +368,7 @@ export function MyPage() {
           회원 탈퇴
         </button>
       </div>
+      <BottomNav />
     </div>
   )
 }

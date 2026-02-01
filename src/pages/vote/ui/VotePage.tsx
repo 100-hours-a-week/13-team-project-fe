@@ -79,9 +79,12 @@ export function VotePage() {
   const currentCandidate = candidates[currentIndex]
   const images = useMemo(() => {
     if (!currentCandidate) return []
-    return [currentCandidate.imageUrl1, currentCandidate.imageUrl2, currentCandidate.imageUrl3].filter(
-      Boolean,
-    ) as string[]
+    const list = [
+      currentCandidate.imageUrl1,
+      currentCandidate.imageUrl2,
+      currentCandidate.imageUrl3,
+    ].filter(Boolean) as string[]
+    return Array.from(new Set(list))
   }, [currentCandidate])
 
   useEffect(() => {
@@ -198,8 +201,8 @@ export function VotePage() {
         <button
           type="button"
           className={styles.backButton}
-          onClick={() => window.history.back()}
-          aria-label="뒤로가기"
+          onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+          aria-label="모임 상세로 돌아가기"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 19l-7-7 7-7" />
