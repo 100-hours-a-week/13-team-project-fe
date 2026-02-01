@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 32px clamp(20px, 5vw, 40px);
+  padding: 32px clamp(20px, 5vw, 40px) 140px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -18,5 +18,5 @@
   border-radius: 12px;
   border: 1px dashed rgba(16, 24, 40, 0.2);
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.7);
+  background: transparent;
 }

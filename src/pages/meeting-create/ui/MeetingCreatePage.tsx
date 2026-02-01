@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './MeetingCreatePage.module.css'
 import { request } from '@/shared/lib/api'
+import { navigate } from '@/shared/lib/navigation'
 
 declare global {
   interface Window {
@@ -43,7 +44,7 @@ type FormState = {
   lat: string
   lng: string
   targetHeadcount: string
-  searchRadiusKm: string
+  searchRadiusM: string
   voteDeadlineAt: string
   exceptMeat: boolean
   exceptBar: boolean
@@ -172,6 +173,24 @@ function toFixedNumber(value: string, fractionDigits: number) {
   return Number(num.toFixed(fractionDigits))
 }
 
+function getDateParts(value: string) {
+  if (!value) return { date: '', hour: '', minute: '' }
+  const [datePart, timePart = ''] = value.split('T')
+  const [hour = '', minute = ''] = timePart.split(':')
+  return { date: datePart, hour, minute }
+}
+
+function pad2(value: string) {
+  return value.padStart(2, '0')
+}
+
+function composeDateTime(date: string, hour: string, minute: string) {
+  if (!date) return ''
+  const safeHour = pad2(hour || '00')
+  const safeMinute = pad2(minute || '00')
+  return `${date}T${safeHour}:${safeMinute}`
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -194,7 +213,7 @@ export function MeetingCreatePage() {
     lat: '',
     lng: '',
     targetHeadcount: '',
-    searchRadiusKm: '',
+    searchRadiusM: '',
     voteDeadlineAt: '',
     exceptMeat: false,
     exceptBar: false,
@@ -202,6 +221,15 @@ export function MeetingCreatePage() {
     quickMeeting: false,
   })
   const [errors, setErrors] = useState<Errors>({})
+  const [touched, setTouched] = useState({
+    title: false,
+    scheduledAt: false,
+    address: false,
+    targetHeadcount: false,
+    searchRadiusM: false,
+    voteDeadlineAt: false,
+    swipeCount: false,
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
@@ -211,6 +239,14 @@ export function MeetingCreatePage() {
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchAttempted, setIsSearchAttempted] = useState(false)
   const [isOutOfService, setIsOutOfService] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [timeNotice, setTimeNotice] = useState<string | null>(null)
+  const [timePicker, setTimePicker] = useState<{
+    key: 'scheduledAt' | 'voteDeadlineAt'
+    date: string
+    hour: string
+    minute: string
+  } | null>(null)
   const [selectedPoint, setSelectedPoint] = useState<{
     lat: number
     lng: number
@@ -256,22 +292,23 @@ export function MeetingCreatePage() {
       next.targetHeadcount = '인원은 최소 2명입니다.'
     }
 
-    const searchRadiusKm = Number(form.searchRadiusKm)
-    const searchRadiusM = searchRadiusKm * 1000
-    if (!form.searchRadiusKm) {
-      next.searchRadiusKm = '검색 반경을 입력해 주세요.'
+    const searchRadiusM = Number(form.searchRadiusM)
+    if (!form.searchRadiusM) {
+      next.searchRadiusM = '검색 반경을 입력해 주세요.'
     } else if (
-      !Number.isFinite(searchRadiusKm) ||
+      !Number.isFinite(searchRadiusM) ||
       searchRadiusM < 1 ||
       searchRadiusM > 3000
     ) {
-      next.searchRadiusKm = '검색 반경은 1~3000m 범위입니다.'
+      next.searchRadiusM = '검색 반경은 1~3000m 범위입니다.'
     }
 
     if (!form.voteDeadlineAt) {
       next.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
     } else if (!isFuture(form.voteDeadlineAt)) {
       next.voteDeadlineAt = '현재보다 미래 시간이어야 합니다.'
+    } else if (form.scheduledAt && new Date(form.voteDeadlineAt) > new Date(form.scheduledAt)) {
+      next.voteDeadlineAt = '투표 마감은 모임 시간보다 이전이어야 합니다.'
     }
 
     const swipeCount = Number(form.swipeCount)
@@ -282,7 +319,7 @@ export function MeetingCreatePage() {
     }
 
     return next
-  }, [form.searchRadiusKm, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
+  }, [form.searchRadiusM, form.scheduledAt, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
 
   const isStep1Valid = useMemo(() => Object.keys(step1Errors).length === 0, [step1Errors])
   const isStep2Valid = useMemo(() => Object.keys(step2Errors).length === 0, [step2Errors])
@@ -453,6 +490,103 @@ export function MeetingCreatePage() {
     }))
   }
 
+  const markTouched = (key: keyof typeof touched) => {
+    setTouched((prev) => ({ ...prev, [key]: true }))
+  }
+
+  const shouldShowError = (key: keyof typeof touched, value: string) => {
+    const message = errors[key]
+    if (!message) return false
+    if (value.trim()) return true
+    return touched[key]
+  }
+
+  const getDefaultDateTime = (offsetMinutes: number) => {
+    const date = new Date(Date.now() + offsetMinutes * 60 * 1000)
+    const minutes = date.getMinutes()
+    const roundedMinutes = Math.ceil(minutes / 10) * 10
+    if (roundedMinutes === 60) {
+      date.setHours(date.getHours() + 1)
+      date.setMinutes(0, 0, 0)
+    } else {
+      date.setMinutes(roundedMinutes, 0, 0)
+    }
+    const pad = (num: number) => String(num).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+      date.getHours(),
+    )}:${pad(date.getMinutes())}`
+  }
+
+  const formatDateTimeLabel = (value: string) => {
+    if (!value) return ''
+    return value.replace('T', ' ')
+  }
+
+  const ensureDateTime = (key: 'scheduledAt' | 'voteDeadlineAt', offset: number) => {
+    const current = key === 'scheduledAt' ? form.scheduledAt : form.voteDeadlineAt
+    if (current) return current
+    const next = getDefaultDateTime(offset)
+    updateField(key, next)
+    return next
+  }
+
+  const handleDateChange = (
+    key: 'scheduledAt' | 'voteDeadlineAt',
+    date: string,
+    offset: number,
+  ) => {
+    const base = ensureDateTime(key, offset)
+    const parts = getDateParts(base)
+    const nextValue = composeDateTime(date, parts.hour, parts.minute)
+    updateField(key, nextValue)
+  }
+
+  const handleTimeChange = (
+    key: 'scheduledAt' | 'voteDeadlineAt',
+    field: 'hour' | 'minute',
+    value: string,
+    offset: number,
+  ) => {
+    const base = ensureDateTime(key, offset)
+    const parts = getDateParts(base)
+    const nextParts = { ...parts, [field]: value }
+    const nextValue = composeDateTime(nextParts.date, nextParts.hour, nextParts.minute)
+    updateField(key, nextValue)
+  }
+
+  const hourOptions = useMemo(
+    () => Array.from({ length: 24 }, (_, idx) => String(idx).padStart(2, '0')),
+    [],
+  )
+  const minuteOptions = useMemo(() => ['00', '10', '20', '30', '40', '50'], [])
+
+  const openTimePicker = (key: 'scheduledAt' | 'voteDeadlineAt', offset: number) => {
+    const base = ensureDateTime(key, offset)
+    const parts = getDateParts(base)
+    setTimePicker({ key, date: parts.date, hour: parts.hour, minute: parts.minute })
+  }
+
+  const confirmTimePicker = () => {
+    if (!timePicker) return
+    const nextValue = composeDateTime(
+      timePicker.date,
+      timePicker.hour || '00',
+      timePicker.minute || '00',
+    )
+    if (
+      timePicker.key === 'voteDeadlineAt' &&
+      form.scheduledAt &&
+      nextValue &&
+      new Date(nextValue) > new Date(form.scheduledAt)
+    ) {
+      updateField('voteDeadlineAt', form.scheduledAt)
+      setTimeNotice('투표 마감 시간은 최대 모임 시간까지만 설정이 가능합니다')
+    } else {
+      updateField(timePicker.key, nextValue)
+    }
+    setTimePicker(null)
+  }
+
   const handleNextStep = () => {
     if (!isStep1Valid) {
       setErrors(step1Errors)
@@ -553,12 +687,12 @@ export function MeetingCreatePage() {
       locationLat: latFixed,
       locationLng: lngFixed,
       targetHeadcount: Number(form.targetHeadcount),
-      searchRadiusM: Math.round(Number(form.searchRadiusKm) * 1000),
+      searchRadiusM: Math.round(Number(form.searchRadiusM)),
       voteDeadlineAt: toPayloadDate(form.voteDeadlineAt),
-      exceptMeat: form.exceptMeat,
-      exceptBar: form.exceptBar,
+      exceptMeat: false,
+      exceptBar: false,
       swipeCount: Number(form.swipeCount),
-      quickMeeting: form.quickMeeting,
+      quickMeeting: false,
     }
 
     try {
@@ -579,10 +713,7 @@ export function MeetingCreatePage() {
 
       window.location.assign(`/meetings/${meetingId}/created`)
     } catch (error) {
-      setErrors((prev) => ({
-        ...prev,
-        title: error instanceof Error ? error.message : '모임 생성에 실패했습니다.',
-      }))
+      setSubmitError(error instanceof Error ? error.message : '모임 생성에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
@@ -591,7 +722,19 @@ export function MeetingCreatePage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>모임 만들기</h1>
+        <div className={styles.headerRow}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate('/main')}
+            aria-label="메인으로 돌아가기"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className={styles.title}>모임 만들기</h1>
+        </div>
         <p className={styles.subtitle}>필수 정보를 입력해 모임을 시작하세요.</p>
       </header>
 
@@ -620,20 +763,26 @@ export function MeetingCreatePage() {
               type="text"
               value={form.title}
               onChange={(event) => updateField('title', event.target.value)}
+              onBlur={() => markTouched('title')}
               maxLength={20}
             />
-            {errors.title && <span className={styles.error}>{errors.title}</span>}
+            {shouldShowError('title', form.title) && (
+              <span className={styles.error}>{errors.title}</span>
+            )}
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>모임 시간</span>
             <input
               className={styles.input}
-              type="datetime-local"
-              value={form.scheduledAt}
-              onChange={(event) => updateField('scheduledAt', event.target.value)}
+              type="text"
+              readOnly
+              value={formatDateTimeLabel(form.scheduledAt)}
+              placeholder="날짜와 시간을 선택해 주세요."
+              onClick={() => openTimePicker('scheduledAt', 60)}
+              onBlur={() => markTouched('scheduledAt')}
             />
-            {errors.scheduledAt && (
+            {shouldShowError('scheduledAt', form.scheduledAt) && (
               <span className={styles.error}>{errors.scheduledAt}</span>
             )}
           </label>
@@ -647,6 +796,7 @@ export function MeetingCreatePage() {
                 value={form.address}
                 readOnly
                 placeholder="지도에서 위치를 선택해 주세요."
+                onBlur={() => markTouched('address')}
               />
               <button
                 className={styles.secondaryButton}
@@ -656,7 +806,7 @@ export function MeetingCreatePage() {
                 위치 선택
               </button>
             </div>
-            {errors.address && (
+            {shouldShowError('address', form.address) && (
               <span className={styles.error}>{errors.address}</span>
             )}
           </div>
@@ -684,24 +834,26 @@ export function MeetingCreatePage() {
               min={2}
               value={form.targetHeadcount}
               onChange={(event) => updateField('targetHeadcount', event.target.value)}
+              onBlur={() => markTouched('targetHeadcount')}
             />
-            {errors.targetHeadcount && (
+            {shouldShowError('targetHeadcount', form.targetHeadcount) && (
               <span className={styles.error}>{errors.targetHeadcount}</span>
             )}
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>검색 반경(km)</span>
+            <span className={styles.label}>검색 반경(m)</span>
             <input
               className={styles.input}
               type="number"
-              min={0}
-              step="0.1"
-              value={form.searchRadiusKm}
-              onChange={(event) => updateField('searchRadiusKm', event.target.value)}
+              min={1}
+              step="10"
+              value={form.searchRadiusM}
+              onChange={(event) => updateField('searchRadiusM', event.target.value)}
+              onBlur={() => markTouched('searchRadiusM')}
             />
-            {errors.searchRadiusKm && (
-              <span className={styles.error}>{errors.searchRadiusKm}</span>
+            {shouldShowError('searchRadiusM', form.searchRadiusM) && (
+              <span className={styles.error}>{errors.searchRadiusM}</span>
             )}
           </label>
 
@@ -709,11 +861,14 @@ export function MeetingCreatePage() {
             <span className={styles.label}>투표 마감 시간</span>
             <input
               className={styles.input}
-              type="datetime-local"
-              value={form.voteDeadlineAt}
-              onChange={(event) => updateField('voteDeadlineAt', event.target.value)}
+              type="text"
+              readOnly
+              value={formatDateTimeLabel(form.voteDeadlineAt)}
+              placeholder="날짜와 시간을 선택해 주세요."
+              onClick={() => openTimePicker('voteDeadlineAt', 30)}
+              onBlur={() => markTouched('voteDeadlineAt')}
             />
-            {errors.voteDeadlineAt && (
+            {shouldShowError('voteDeadlineAt', form.voteDeadlineAt) && (
               <span className={styles.error}>{errors.voteDeadlineAt}</span>
             )}
           </label>
@@ -727,38 +882,12 @@ export function MeetingCreatePage() {
               max={15}
               value={form.swipeCount}
               onChange={(event) => updateField('swipeCount', event.target.value)}
+              onBlur={() => markTouched('swipeCount')}
             />
-            {errors.swipeCount && (
+            {shouldShowError('swipeCount', form.swipeCount) && (
               <span className={styles.error}>{errors.swipeCount}</span>
             )}
           </label>
-
-          <div className={styles.checkboxGroup}>
-            <label className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={form.exceptMeat}
-                onChange={(event) => updateField('exceptMeat', event.target.checked)}
-              />
-              고기 제외
-            </label>
-            <label className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={form.exceptBar}
-                onChange={(event) => updateField('exceptBar', event.target.checked)}
-              />
-              술집 제외
-            </label>
-            <label className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={form.quickMeeting}
-                onChange={(event) => updateField('quickMeeting', event.target.checked)}
-              />
-              빠른 모임
-            </label>
-          </div>
 
           <div className={styles.actions}>
             <button
@@ -781,18 +910,11 @@ export function MeetingCreatePage() {
       )}
 
       {isModalOpen && (
-        <div className={styles.modalBackdrop}>
-          <div className={styles.modal}>
-            <header className={styles.modalHeader}>
-              <h2>장소 선택</h2>
-              <button
-                type="button"
-                className={styles.closeButton}
-                onClick={() => setIsModalOpen(false)}
-              >
-                닫기
-              </button>
-            </header>
+          <div className={styles.modalBackdrop}>
+            <div className={styles.modal}>
+              <header className={styles.modalHeader}>
+                <h2>장소 선택</h2>
+              </header>
 
             {!appKey && (
               <div className={styles.modalFallback}>
@@ -893,6 +1015,94 @@ export function MeetingCreatePage() {
                 disabled={!selectedPoint}
               >
                 위치 확정
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {submitError && (
+        <div className={styles.alertBackdrop} role="presentation">
+          <div className={styles.alert}>
+            <p>{submitError}</p>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={() => setSubmitError(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {timeNotice && (
+        <div className={styles.alertBackdrop} role="presentation">
+          <div className={styles.alert}>
+            <p>{timeNotice}</p>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={() => setTimeNotice(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {timePicker && (
+        <div className={styles.timePickerBackdrop} role="presentation">
+          <div className={styles.timePicker}>
+            <h3 className={styles.timePickerTitle}>시간 선택</h3>
+            <div className={styles.timePickerRow}>
+              <input
+                className={styles.input}
+                type="date"
+                value={timePicker.date}
+                onChange={(event) =>
+                  setTimePicker((prev) => (prev ? { ...prev, date: event.target.value } : prev))
+                }
+              />
+              <select
+                className={styles.timeSelect}
+                value={timePicker.hour}
+                onChange={(event) =>
+                  setTimePicker((prev) => (prev ? { ...prev, hour: event.target.value } : prev))
+                }
+              >
+                <option value="">시</option>
+                {hourOptions.map((hour) => (
+                  <option key={hour} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={styles.timeSelect}
+                value={timePicker.minute}
+                onChange={(event) =>
+                  setTimePicker((prev) => (prev ? { ...prev, minute: event.target.value } : prev))
+                }
+              >
+                <option value="">분</option>
+                {minuteOptions.map((minute) => (
+                  <option key={minute} value={minute}>
+                    {minute}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.timePickerActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setTimePicker(null)}
+              >
+                취소
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={confirmTimePicker}>
+                확인
               </button>
             </div>
           </div>

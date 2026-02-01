@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import styles from './MeetingCreatedPage.module.css'
 import { request } from '@/shared/lib/api'
+import { navigate } from '@/shared/lib/navigation'
 
 type InviteResponse = {
   meetingId: number
@@ -104,6 +105,18 @@ export function MeetingCreatedPage() {
 
   return (
     <div className={styles.page}>
+      <header className={styles.header}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate('/main')}
+          aria-label="메인으로 돌아가기"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </header>
       <div className={styles.card}>
         <h1 className={styles.title}>모임이 생성됐어요!</h1>
         <p className={styles.subtitle}>
