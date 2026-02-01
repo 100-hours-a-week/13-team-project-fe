@@ -6,6 +6,7 @@ import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import { HeaderLogo } from '@/shared/ui/header-logo'
 import { BottomNav } from '@/shared/ui/bottom-nav'
+import { BackButton } from '@/shared/ui/back-button'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 
@@ -114,6 +115,7 @@ export function MainPage() {
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.brand}>
+            <BackButton />
             <HeaderLogo className={styles.brandTitle} label="모여밥" />
           </div>
           <button type="button" className={styles.logout} onClick={handleLogout}>

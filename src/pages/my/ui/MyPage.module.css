@@ -6,6 +6,12 @@
   gap: 12px;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .title {
   margin: 0;
   font-size: 1.4rem;
