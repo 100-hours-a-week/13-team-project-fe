@@ -233,7 +233,6 @@ export function MeetingCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
-  const [modalStatus, setModalStatus] = useState<string | null>(null)
   const [modalSearch, setModalSearch] = useState('')
   const [modalResults, setModalResults] = useState<KakaoPlace[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -385,7 +384,6 @@ export function MeetingCreatePage() {
     }
 
     setModalError(null)
-    setModalStatus('지도에서 위치를 선택하거나 검색해 주세요.')
     setModalSearch('')
     setModalResults([])
     setIsSearchAttempted(false)
@@ -434,7 +432,6 @@ export function MeetingCreatePage() {
           maps.event.addListener(marker, 'dragend', () => {
             const position = marker.getPosition()
             if (!bounds.contain(position)) {
-              setModalStatus('서비스 지역이 아닙니다.')
               setIsOutOfService(true)
               map.setBounds(bounds)
               const fallback = map.getCenter()
@@ -447,7 +444,6 @@ export function MeetingCreatePage() {
               return
             }
             setSelectedPoint({ lat: position.getLat(), lng: position.getLng() })
-            setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
             setIsOutOfService(false)
           })
 
@@ -459,14 +455,12 @@ export function MeetingCreatePage() {
 
             const latlng = latLng as KakaoLatLng
             if (!bounds.contain(latlng)) {
-              setModalStatus('서비스 지역이 아닙니다.')
               setIsOutOfService(true)
               return
             }
             marker.setPosition(latlng)
             marker.setVisible(true)
             setSelectedPoint({ lat: latlng.getLat(), lng: latlng.getLng() })
-            setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
             setIsOutOfService(false)
           })
 
@@ -610,7 +604,6 @@ export function MeetingCreatePage() {
 
   const handleConfirmLocation = () => {
     if (!selectedPoint) {
-      setModalStatus('위치를 먼저 선택해 주세요.')
       return
     }
     resolveAddress(selectedPoint.lat, selectedPoint.lng)
@@ -629,18 +622,15 @@ export function MeetingCreatePage() {
     setIsSearchAttempted(true)
     if (!modalSearch.trim()) {
       setModalResults([])
-      setModalStatus('검색어를 입력해 주세요.')
       return
     }
     if (!placesRef.current) {
       setModalResults([])
-      setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
       return
     }
     const maps = window.kakao?.maps
     if (!maps) {
       setModalResults([])
-      setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
       return
     }
 
@@ -649,10 +639,8 @@ export function MeetingCreatePage() {
       setIsSearching(false)
       if (status !== maps.services.Status.OK || !data?.length) {
         setModalResults([])
-        setModalStatus('검색 결과가 없습니다.')
         return
       }
-      setModalStatus('검색 결과에서 장소를 선택해 주세요.')
       setModalResults(data)
     })
   }
@@ -666,13 +654,11 @@ export function MeetingCreatePage() {
     if (!maps) return
 
     if (bounds && !bounds.contain(new maps.LatLng(lat, lng))) {
-      setModalStatus('서비스 지역이 아닙니다.')
       setIsOutOfService(true)
       return
     }
     moveMapTo(lat, lng)
     setSelectedPoint({ lat, lng })
-    setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
     setIsOutOfService(false)
   }
 

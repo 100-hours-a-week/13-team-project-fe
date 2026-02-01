@@ -173,7 +173,7 @@ export function MeetingDetailPage() {
       await request<void>(`/api/v1/meetings/${data.meetingId}`, { method: 'DELETE' })
 
       navigate('/main')
-    } catch (err) {
+    } catch {
       setModalMessage(err instanceof Error ? err.message : '모임 삭제에 실패했습니다.')
     } finally {
       setIsDeleting(false)
