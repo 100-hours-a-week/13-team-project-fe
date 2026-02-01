@@ -111,6 +111,30 @@
   max-width: 70%;
 }
 
+.codeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codeValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+}
+
+.copyButton {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .participantsSection {
   background: var(--surface);
   border-radius: 18px;
@@ -194,8 +218,9 @@
 }
 
 .primaryAction:disabled {
-  background: rgba(57, 62, 70, 0.7);
-  color: var(--muted);
+  background: var(--brand);
+  color: #fff;
+  opacity: 0.6;
 }
 
 .secondaryAction {
@@ -251,4 +276,29 @@
   background: var(--accent);
   color: #fff;
   font-weight: 600;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modalCancel,
+.modalConfirm {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+}
+
+.modalCancel {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--stroke);
+}
+
+.modalConfirm {
+  background: var(--brand);
+  color: #fff;
 }
