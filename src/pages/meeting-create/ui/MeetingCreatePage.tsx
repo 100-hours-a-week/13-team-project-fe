@@ -233,7 +233,6 @@ export function MeetingCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
-  const [modalStatus, setModalStatus] = useState<string | null>(null)
   const [modalSearch, setModalSearch] = useState('')
   const [modalResults, setModalResults] = useState<KakaoPlace[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -385,7 +384,6 @@ export function MeetingCreatePage() {
     }
 
     setModalError(null)
-    setModalStatus('지도에서 위치를 선택하거나 검색해 주세요.')
     setModalSearch('')
     setModalResults([])
     setIsSearchAttempted(false)
@@ -434,7 +432,6 @@ export function MeetingCreatePage() {
           maps.event.addListener(marker, 'dragend', () => {
             const position = marker.getPosition()
             if (!bounds.contain(position)) {
-              setModalStatus('서비스 지역이 아닙니다.')
               setIsOutOfService(true)
               map.setBounds(bounds)
               const fallback = map.getCenter()
@@ -447,7 +444,6 @@ export function MeetingCreatePage() {
               return
             }
             setSelectedPoint({ lat: position.getLat(), lng: position.getLng() })
-            setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
             setIsOutOfService(false)
           })
 
@@ -459,14 +455,12 @@ export function MeetingCreatePage() {
 
             const latlng = latLng as KakaoLatLng
             if (!bounds.contain(latlng)) {
-              setModalStatus('서비스 지역이 아닙니다.')
               setIsOutOfService(true)
               return
             }
             marker.setPosition(latlng)
             marker.setVisible(true)
             setSelectedPoint({ lat: latlng.getLat(), lng: latlng.getLng() })
-            setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
             setIsOutOfService(false)
           })
 
@@ -542,6 +536,27 @@ export function MeetingCreatePage() {
     setTimePicker({ key, date: parts.date, hour: parts.hour, minute: parts.minute })
   }
 
+  const applyVoteDeadlineOffset = (offsetMinutes: number) => {
+    if (!form.scheduledAt) {
+      setTimeNotice('모임 시간을 먼저 선택해 주세요')
+      return
+    }
+    const base = new Date(form.scheduledAt)
+    const next = new Date(base.getTime() - offsetMinutes * 60 * 1000)
+    const pad = (num: number) => String(num).padStart(2, '0')
+    const nextValue = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}T${pad(
+      next.getHours(),
+    )}:${pad(next.getMinutes())}`
+    updateField('voteDeadlineAt', nextValue)
+  }
+
+  const canUseOffset = (offsetMinutes: number) => {
+    if (!form.scheduledAt) return false
+    const scheduled = new Date(form.scheduledAt).getTime()
+    const candidate = Date.now() + offsetMinutes * 60 * 1000
+    return candidate <= scheduled
+  }
+
   const confirmTimePicker = () => {
     if (!timePicker) return
     const nextValue = composeDateTime(
@@ -549,16 +564,30 @@ export function MeetingCreatePage() {
       timePicker.hour || '00',
       timePicker.minute || '00',
     )
-    if (
-      timePicker.key === 'voteDeadlineAt' &&
-      form.scheduledAt &&
-      nextValue &&
-      new Date(nextValue) > new Date(form.scheduledAt)
-    ) {
-      updateField('voteDeadlineAt', form.scheduledAt)
-      setTimeNotice('투표 마감 시간은 최대 모임 시간까지만 설정이 가능합니다')
+    if (timePicker.key === 'voteDeadlineAt') {
+      if (
+        form.scheduledAt &&
+        nextValue &&
+        new Date(nextValue) > new Date(form.scheduledAt)
+      ) {
+        updateField('voteDeadlineAt', form.scheduledAt)
+        setTimeNotice('투표 마감 시간은 최대 모임 시간까지만 설정이 가능합니다')
+      } else if (nextValue && new Date(nextValue) < new Date()) {
+        updateField('voteDeadlineAt', form.scheduledAt)
+        setTimeNotice('투표 마감 시간은 현재 시간 이후여야 합니다.')
+      } else {
+        updateField('voteDeadlineAt', nextValue)
+      }
     } else {
       updateField(timePicker.key, nextValue)
+      if (
+        timePicker.key === 'scheduledAt' &&
+        form.voteDeadlineAt &&
+        nextValue &&
+        new Date(form.voteDeadlineAt) > new Date(nextValue)
+      ) {
+        updateField('voteDeadlineAt', nextValue)
+      }
     }
     setTimePicker(null)
   }
@@ -575,7 +604,6 @@ export function MeetingCreatePage() {
 
   const handleConfirmLocation = () => {
     if (!selectedPoint) {
-      setModalStatus('위치를 먼저 선택해 주세요.')
       return
     }
     resolveAddress(selectedPoint.lat, selectedPoint.lng)
@@ -594,18 +622,15 @@ export function MeetingCreatePage() {
     setIsSearchAttempted(true)
     if (!modalSearch.trim()) {
       setModalResults([])
-      setModalStatus('검색어를 입력해 주세요.')
       return
     }
     if (!placesRef.current) {
       setModalResults([])
-      setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
       return
     }
     const maps = window.kakao?.maps
     if (!maps) {
       setModalResults([])
-      setModalStatus('지도를 불러오는 중입니다. 잠시만 기다려 주세요.')
       return
     }
 
@@ -614,10 +639,8 @@ export function MeetingCreatePage() {
       setIsSearching(false)
       if (status !== maps.services.Status.OK || !data?.length) {
         setModalResults([])
-        setModalStatus('검색 결과가 없습니다.')
         return
       }
-      setModalStatus('검색 결과에서 장소를 선택해 주세요.')
       setModalResults(data)
     })
   }
@@ -631,13 +654,11 @@ export function MeetingCreatePage() {
     if (!maps) return
 
     if (bounds && !bounds.contain(new maps.LatLng(lat, lng))) {
-      setModalStatus('서비스 지역이 아닙니다.')
       setIsOutOfService(true)
       return
     }
     moveMapTo(lat, lng)
     setSelectedPoint({ lat, lng })
-    setModalStatus('선택된 위치입니다. 확정 버튼을 눌러 주세요.')
     setIsOutOfService(false)
   }
 
@@ -763,6 +784,51 @@ export function MeetingCreatePage() {
             )}
           </label>
 
+          <label className={styles.field}>
+            <span className={styles.label}>투표 마감 시간</span>
+            <input
+              className={styles.input}
+              type="text"
+              readOnly
+              value={formatDateTimeLabel(form.voteDeadlineAt)}
+              placeholder="날짜와 시간을 선택해 주세요."
+              onClick={() => openTimePicker('voteDeadlineAt', 30)}
+              onBlur={() => markTouched('voteDeadlineAt')}
+            />
+            <div className={styles.quickRow}>
+              {canUseOffset(60) && (
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() => applyVoteDeadlineOffset(60)}
+                >
+                  모임 시간 1시간 전
+                </button>
+              )}
+              {canUseOffset(30) && (
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() => applyVoteDeadlineOffset(30)}
+                >
+                  모임 시간 30분 전
+                </button>
+              )}
+              {canUseOffset(24 * 60) && (
+                <button
+                  type="button"
+                  className={styles.quickButton}
+                  onClick={() => applyVoteDeadlineOffset(24 * 60)}
+                >
+                  모임 시간 하루 전
+                </button>
+              )}
+            </div>
+            {shouldShowError('voteDeadlineAt', form.voteDeadlineAt) && (
+              <span className={styles.error}>{errors.voteDeadlineAt}</span>
+            )}
+          </label>
+
           <div className={styles.field}>
             <span className={styles.label}>모임 장소</span>
             <div className={styles.row}>
@@ -834,22 +900,6 @@ export function MeetingCreatePage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>투표 마감 시간</span>
-            <input
-              className={styles.input}
-              type="text"
-              readOnly
-              value={formatDateTimeLabel(form.voteDeadlineAt)}
-              placeholder="날짜와 시간을 선택해 주세요."
-              onClick={() => openTimePicker('voteDeadlineAt', 30)}
-              onBlur={() => markTouched('voteDeadlineAt')}
-            />
-            {shouldShowError('voteDeadlineAt', form.voteDeadlineAt) && (
-              <span className={styles.error}>{errors.voteDeadlineAt}</span>
-            )}
-          </label>
-
-          <label className={styles.field}>
             <span className={styles.label}>스와이프 수</span>
             <input
               className={styles.input}
@@ -900,6 +950,7 @@ export function MeetingCreatePage() {
 
             {appKey && (
               <div className={styles.modalBody}>
+                <p className={styles.serviceNote}>서비스 지역은 삼평동, 백현동, 수내 1동입니다</p>
                 <div className={styles.searchRow}>
                   <input
                     className={styles.input}
@@ -920,7 +971,7 @@ export function MeetingCreatePage() {
                     onClick={handleSearch}
                     disabled={!modalSearch.trim() || isSearching}
                   >
-                    {isSearching ? '검색 중...' : '검색'}
+                    검색
                   </button>
                 </div>
 
@@ -973,7 +1024,6 @@ export function MeetingCreatePage() {
               </div>
             )}
 
-            {modalStatus && <p className={styles.modalStatus}>{modalStatus}</p>}
             {modalError && <p className={styles.modalError}>{modalError}</p>}
 
             <div className={styles.modalActions}>
