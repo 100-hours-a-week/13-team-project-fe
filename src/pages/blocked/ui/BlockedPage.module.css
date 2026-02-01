@@ -1,9 +1,13 @@
 .page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 24px;
+}
+
+.header {
+  align-self: flex-start;
 }
 
 .card {
@@ -14,6 +18,7 @@
   padding: 32px 28px;
   text-align: center;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  margin: auto 0;
 }
 
 .badge {

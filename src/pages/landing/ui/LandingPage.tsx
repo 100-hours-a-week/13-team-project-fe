@@ -1,6 +1,7 @@
 import styles from './LandingPage.module.css'
 import { startKakaoLogin } from '@/shared/lib/api'
 import kakaoLogin from '@/assets/kakao_login_large_wide.png'
+import { BackButton } from '@/shared/ui/back-button'
 
 const features = [
   {
@@ -42,7 +43,9 @@ const steps = [
 export function LandingPage() {
   return (
     <div className={styles.page}>
-
+      <header className={styles.header}>
+        <BackButton fallbackPath="/" />
+      </header>
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <h1 className={styles.title}>모여밥</h1>

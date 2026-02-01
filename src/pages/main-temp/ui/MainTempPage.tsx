@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@/app/providers/auth-context'
 import { ApiError, logout, withdrawMember } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
+import { BackButton } from '@/shared/ui/back-button'
 
 export function MainTempPage() {
   const { member, setMember } = useAuth()
@@ -59,9 +60,12 @@ export function MainTempPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
-          <h1>모여밥 메인 (임시)</h1>
-          <p>팀원 메인과 병합 전까지 쓰는 임시 메인입니다.</p>
+        <div className={styles.titleRow}>
+          <BackButton />
+          <div>
+            <h1>모여밥 메인 (임시)</h1>
+            <p>팀원 메인과 병합 전까지 쓰는 임시 메인입니다.</p>
+          </div>
         </div>
         <div className={styles.actions}>
           <button className={styles.logout} onClick={handleLogout}>
