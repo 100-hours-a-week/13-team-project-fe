@@ -206,8 +206,8 @@ export function MeetingDetailPage() {
         <button
           type="button"
           className={styles.backButton}
-          onClick={() => window.history.back()}
-          aria-label="뒤로가기"
+          onClick={() => navigate('/main')}
+          aria-label="메인으로 돌아가기"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 19l-7-7 7-7" />

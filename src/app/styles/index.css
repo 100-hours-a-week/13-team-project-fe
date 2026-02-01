@@ -3,18 +3,22 @@
   font-family: "Pretendard", "SUIT", "Noto Sans KR", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #1f1b16;
-  background-color: #f7f4ef;
+  color: #222831;
+  background-color: #eeeeee;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --bg: #f7f4ef;
-  --brand: #1f1b16;
-  --brand-soft: #fff1cc;
-  --ink: #1f1b16;
-  --muted: #6f655b;
-  --stroke: #e6ded4;
+  --bg: #f9f5f0;
+  --surface: #ffffff;
+  --brand: #bbcb64;
+  --brand-soft: #ffe52a;
+  --ink: #222831;
+  --muted: rgba(34, 40, 49, 0.7);
+  --stroke: #e1e1e1;
+  --accent: #f79a19;
+  --accent-strong: #f79a19;
+  --danger: #cf0f0f;
 }
 
 * {
@@ -26,12 +30,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--ink);
-  background:
-    radial-gradient(800px 400px at 5% 0%, rgba(255, 228, 161, 0.35), transparent 60%),
-    radial-gradient(700px 380px at 95% 10%, rgba(255, 185, 122, 0.25), transparent 60%),
-    radial-gradient(600px 300px at 30% 100%, rgba(233, 210, 165, 0.22), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
 }
 
 #root {

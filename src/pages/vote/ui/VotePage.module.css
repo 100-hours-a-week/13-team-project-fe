@@ -14,22 +14,25 @@
 }
 
 .backButton {
-  width: 40px;
-  height: 40px;
   border: none;
-  border-radius: 12px;
-  background: #ffffff;
+  background: var(--surface);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  color: var(--ink);
 }
 
 .backButton svg {
   width: 20px;
   height: 20px;
-  stroke: #1f2937;
+  stroke: currentColor;
   stroke-width: 2;
   fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .progressWrapper {
@@ -84,7 +87,8 @@
 }
 
 .imageArea {
-  flex: 0 0 66.6667%;
+  flex: 1 1 auto;
+  min-height: 0;
   position: relative;
   background: #111827;
 }
@@ -145,11 +149,12 @@
 }
 
 .infoArea {
-  flex: 0 0 33.3333%;
+  flex: 0 0 180px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
 }
 
 .titleRow {
@@ -163,6 +168,9 @@
   font-size: 20px;
   margin: 0;
   color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .category {
@@ -178,12 +186,17 @@
   gap: 12px;
   font-size: 14px;
   color: #6b7280;
+  flex-wrap: wrap;
 }
 
 .address {
   font-size: 14px;
   color: #374151;
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .actions {
