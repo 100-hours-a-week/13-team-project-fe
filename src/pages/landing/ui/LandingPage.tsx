@@ -45,7 +45,7 @@ export function LandingPage() {
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <h1 className={styles.title}>맛침반</h1>
+          <h1 className={styles.title}>모여밥</h1>
           <p className={styles.subtitle}>식당을 5분 안에 결정해요.</p>
           <p className={styles.heroLead}>
             알레르기와 취향을 반영해 실패없는 맛집을 빠르게 추천해요.

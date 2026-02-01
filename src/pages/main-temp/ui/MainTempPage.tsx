@@ -60,7 +60,7 @@ export function MainTempPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1>맛침반 메인 (임시)</h1>
+          <h1>모여밥 메인 (임시)</h1>
           <p>팀원 메인과 병합 전까지 쓰는 임시 메인입니다.</p>
         </div>
         <div className={styles.actions}>
