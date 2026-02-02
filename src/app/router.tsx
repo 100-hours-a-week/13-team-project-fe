@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@/app/providers/auth-context'
 import { type MemberStatus } from '@/shared/lib/api'
+import { navigate } from '@/shared/lib/navigation'
 import { LandingPage } from '@/pages/landing'
 import { TermsPage } from '@/pages/terms'
 import { PreferencesPage } from '@/pages/preferences'
@@ -15,6 +16,7 @@ import { NotificationPage } from '@/pages/notification'
 import { MeetingDetailPage } from '@/pages/meeting-detail'
 import { MeetingCreatedPage } from '@/pages/meeting-created'
 import { MeetingCreatePage } from '@/pages/meeting-create'
+import { MeetingJoinPage } from '@/pages/meeting-join'
 import { MeetingEditPage } from '@/pages/meeting-edit'
 import { MeetingFinalPage } from '@/pages/meeting-final'
 import { VoteCreatePage } from '@/pages/vote-create'
@@ -29,7 +31,7 @@ const statusRoute: Record<MemberStatus, string> = {
   DELETED: '/blocked',
 }
 
-const publicPaths = new Set(['/', '/terms', '/preferences'])
+const publicPaths = new Set(['/', '/terms', '/preferences', '/meetings/join'])
 
 function LoadingScreen() {
   return (
@@ -92,6 +94,17 @@ export function AppRouter() {
     }
   }, [loading, member, pathname, status])
 
+  useEffect(() => {
+    if (loading) return
+    if (!member) return
+    if (status && status !== 'ACTIVE') return
+    const redirectPath = sessionStorage.getItem('postLoginRedirect')
+    if (!redirectPath) return
+    sessionStorage.removeItem('postLoginRedirect')
+    if (redirectPath === pathname) return
+    navigate(redirectPath, { replace: true })
+  }, [loading, member, pathname, status])
+
   if (loading) return <LoadingScreen />
 
   if (!member && !publicPaths.has(pathname)) {
@@ -123,6 +136,7 @@ export function AppRouter() {
       <Route path="/mypage" element={<MyPage />} />
       <Route path="/blocked" element={<BlockedPage />} />
       <Route path="/meetings/new" element={<MeetingCreatePage />} />
+      <Route path="/meetings/join" element={<MeetingJoinPage />} />
       <Route path="/meetings/:meetingId/edit" element={<MeetingEditPage />} />
       <Route path="/meetings/:meetingId" element={<MeetingDetailPage />} />
       <Route path="/meetings/:meetingId/created" element={<MeetingCreatedPage />} />

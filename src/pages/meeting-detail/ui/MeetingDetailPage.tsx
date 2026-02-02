@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
@@ -30,6 +30,16 @@ type MeetingDetailResponse = {
   meetingStatus: string
 }
 
+type MeetingDetailStateResponse = {
+  meetingStatus: string
+  voteStatus: string | null
+  currentVoteId: number | null
+  participantCount: number
+  participants: MeetingParticipantSummary[]
+  hasVotedCurrent: boolean
+  finalSelected: boolean
+}
+
 type MeetingParticipantSummary = {
   memberId: number
   nickname: string
@@ -59,33 +69,138 @@ export function MeetingDetailPage() {
   const [confirmAction, setConfirmAction] = useState<'delete' | 'leave' | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [copyNotice, setCopyNotice] = useState<string | null>(null)
+  const pollTimerRef = useRef<number | null>(null)
+  const isFetchingStateRef = useRef(false)
+  const stateSnapshotRef = useRef<MeetingDetailStateResponse | null>(null)
+
+  const fetchDetail = useCallback(async () => {
+    if (!meetingId) return
+    try {
+      setLoading(true)
+      setError(null)
+      const payload = await request<MeetingDetailResponse>(`/api/v1/meetings/${meetingId}`)
+      setData(payload)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '모임 상세 정보를 불러오지 못했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }, [meetingId])
+
+  const applyStateToDetail = useCallback((state: MeetingDetailStateResponse) => {
+    setData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        meetingStatus: state.meetingStatus,
+        voteStatus: state.voteStatus,
+        currentVoteId: state.currentVoteId,
+        participantCount: state.participantCount,
+        participants: state.participants ?? prev.participants,
+        hasVotedCurrent: state.hasVotedCurrent,
+        finalSelected: state.finalSelected,
+      }
+    })
+  }, [])
+
+  const getPollDelayMs = useCallback((state: MeetingDetailStateResponse | null) => {
+    if (!state) return 3000
+    if (state.finalSelected) return null
+    if (state.voteStatus === 'COUNTED') return null
+    if (state.voteStatus === 'FAILED') return null
+    if (state.voteStatus === 'GENERATING') return 1500
+    if (state.voteStatus === 'COUNTING') return 1500
+    if (state.voteStatus === 'OPEN') return 4000
+    return 3000
+  }, [])
+
+  const fetchState = useCallback(async () => {
+    if (!meetingId) return
+    if (isFetchingStateRef.current) return
+    isFetchingStateRef.current = true
+    try {
+      const state = await request<MeetingDetailStateResponse>(
+        `/api/v1/meetings/${meetingId}/state`,
+      )
+      applyStateToDetail(state)
+
+      const prev = stateSnapshotRef.current
+      const shouldRefetchDetail =
+        !prev ||
+        prev.currentVoteId !== state.currentVoteId ||
+        prev.participantCount !== state.participantCount ||
+        prev.meetingStatus !== state.meetingStatus ||
+        prev.voteStatus !== state.voteStatus ||
+        prev.hasVotedCurrent !== state.hasVotedCurrent ||
+        prev.finalSelected !== state.finalSelected ||
+        (state.meetingStatus === 'READY' && prev.participants?.length !== state.participants?.length)
+
+      stateSnapshotRef.current = state
+
+      if (shouldRefetchDetail) {
+        void fetchDetail()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '모임 상태를 불러오지 못했습니다.')
+    } finally {
+      isFetchingStateRef.current = false
+    }
+  }, [applyStateToDetail, fetchDetail, meetingId])
+
+  const scheduleNextPoll = useCallback(
+    (state: MeetingDetailStateResponse | null) => {
+      if (pollTimerRef.current) {
+        window.clearTimeout(pollTimerRef.current)
+        pollTimerRef.current = null
+      }
+      if (document.hidden) return
+      const delay = getPollDelayMs(state)
+      if (delay === null) return
+      pollTimerRef.current = window.setTimeout(() => {
+        void fetchState().then(() => {
+          scheduleNextPoll(stateSnapshotRef.current)
+        })
+      }, delay)
+    },
+    [fetchState, getPollDelayMs],
+  )
+
+  useEffect(() => {
+    void fetchDetail()
+  }, [fetchDetail])
 
   useEffect(() => {
     if (!meetingId) return
-    let active = true
-
-    const fetchDetail = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const payload = await request<MeetingDetailResponse>(`/api/v1/meetings/${meetingId}`)
-        if (!active) return
-        setData(payload)
-      } catch (err) {
-        if (!active) return
-        setError(err instanceof Error ? err.message : '모임 상세 정보를 불러오지 못했습니다.')
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
+    const handleFocus = () => {
+      if (!document.hidden) {
+        void fetchState().then(() => scheduleNextPoll(stateSnapshotRef.current))
       }
     }
-
-    void fetchDetail()
-    return () => {
-      active = false
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (pollTimerRef.current) {
+          window.clearTimeout(pollTimerRef.current)
+          pollTimerRef.current = null
+        }
+        return
+      }
+      void fetchState().then(() => scheduleNextPoll(stateSnapshotRef.current))
     }
-  }, [meetingId])
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    void fetchState().then(() => scheduleNextPoll(stateSnapshotRef.current))
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      if (pollTimerRef.current) {
+        window.clearTimeout(pollTimerRef.current)
+        pollTimerRef.current = null
+      }
+    }
+  }, [fetchState, meetingId, scheduleNextPoll])
 
   const isHost = useMemo(() => {
     if (!data) return false
@@ -93,7 +208,16 @@ export function MeetingDetailPage() {
     return data.hostMemberId === member.memberId
   }, [data, member])
 
-  const canEditMeeting = Boolean(data && isHost && data.currentVoteId === null)
+  const isVoteActive = useMemo(() => {
+    if (!data?.voteStatus) return false
+    return ['GENERATING', 'OPEN', 'COUNTING'].includes(data.voteStatus)
+  }, [data?.voteStatus])
+
+  const canEditMeeting = Boolean(
+    data &&
+      isHost &&
+      (data.currentVoteId === null || data.voteStatus === 'FAILED'),
+  )
   const isAllParticipantsReady = Boolean(
     data && data.participantCount >= data.targetHeadcount,
   )
@@ -148,6 +272,7 @@ export function MeetingDetailPage() {
             return
           }
           navigate(`/votes/new?meetingId=${data.meetingId}`)
+          void fetchState()
         },
       }
     }
@@ -164,7 +289,7 @@ export function MeetingDetailPage() {
     }
 
     return { label: '투표 준비 중', disabled: true, onClick: () => {} }
-  }, [data, isAllParticipantsReady, isHost])
+  }, [data, fetchState, isAllParticipantsReady, isHost])
 
   const handleDeleteMeeting = async () => {
     if (!data) return
@@ -225,7 +350,7 @@ export function MeetingDetailPage() {
       {loading && <p className={styles.note}>불러오는 중...</p>}
       {error && <p className={styles.note}>{error}</p>}
 
-      {!loading && !error && data && (
+      {!loading && data && (
         <>
           {canEditMeeting && (
             <button
@@ -305,6 +430,14 @@ export function MeetingDetailPage() {
               type="button"
               className={styles.secondaryAction}
               onClick={() => {
+                if (isVoteActive) {
+                  setModalMessage(
+                    isHost
+                      ? '투표가 진행 중일 때는 모임을 삭제할 수 없어요.'
+                      : '투표가 진행 중일 때는 모임을 떠날 수 없어요.',
+                  )
+                  return
+                }
                 if (isHost) {
                   setConfirmAction('delete')
                   return
