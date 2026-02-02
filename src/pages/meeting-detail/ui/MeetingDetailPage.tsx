@@ -289,7 +289,7 @@ export function MeetingDetailPage() {
     }
 
     return { label: '투표 준비 중', disabled: true, onClick: () => {} }
-  }, [data, isAllParticipantsReady, isHost])
+  }, [data, fetchState, isAllParticipantsReady, isHost])
 
   const handleDeleteMeeting = async () => {
     if (!data) return

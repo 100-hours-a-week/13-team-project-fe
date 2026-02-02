@@ -56,7 +56,10 @@ export function MeetingJoinPage() {
   useEffect(() => {
     if (loading) return
     if (!member || (memberStatus && memberStatus !== 'ACTIVE')) return
-    void handleJoin()
+    const timerId = window.setTimeout(() => {
+      void handleJoin()
+    }, 0)
+    return () => window.clearTimeout(timerId)
   }, [handleJoin, loading, member, memberStatus])
 
   return (

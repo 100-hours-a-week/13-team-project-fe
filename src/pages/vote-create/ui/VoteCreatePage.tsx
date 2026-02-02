@@ -18,6 +18,7 @@ export function VoteCreatePage() {
   const [error, setError] = useState<string | null>(null)
   const [voteId, setVoteId] = useState<number | null>(null)
   const pollTimerRef = useRef<number | null>(null)
+  const pollVoteStatusRef = useRef<() => void>(() => {})
 
   const meetingId = useMemo(() => {
     const params = new URLSearchParams(search)
@@ -91,19 +92,29 @@ export function VoteCreatePage() {
       setError(err instanceof Error ? err.message : '투표 상태를 불러오지 못했습니다.')
     }
 
-    pollTimerRef.current = window.setTimeout(pollVoteStatus, 1500)
+    pollTimerRef.current = window.setTimeout(() => {
+      pollVoteStatusRef.current()
+    }, 1500)
   }, [meetingId, stopPolling])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void handleCreate()
+    const timerId = window.setTimeout(() => {
+      void handleCreate()
+    }, 0)
+    return () => window.clearTimeout(timerId)
   }, [handleCreate])
+
+  useEffect(() => {
+    pollVoteStatusRef.current = pollVoteStatus
+  }, [pollVoteStatus])
 
   useEffect(() => {
     if (!meetingId || status === 'error') return
     if (status === 'success') return
     stopPolling()
-    pollTimerRef.current = window.setTimeout(pollVoteStatus, 1500)
+    pollTimerRef.current = window.setTimeout(() => {
+      pollVoteStatusRef.current()
+    }, 1500)
     return () => stopPolling()
   }, [meetingId, pollVoteStatus, status, stopPolling])
 
