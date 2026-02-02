@@ -80,6 +80,10 @@ export function VoteTop3Page() {
     if (!isHost) return
     try {
       setRecoState('loading')
+      await request<void>(
+        `/api/v1/meetings/${parsedMeetingId}/votes/${parsedVoteId}/start-revote`,
+        { method: 'POST' },
+      )
       await getVoteCandidates(parsedMeetingId, parsedVoteId)
       navigate(`/meetings/${parsedMeetingId}/votes/${parsedVoteId}`)
     } catch (err) {
