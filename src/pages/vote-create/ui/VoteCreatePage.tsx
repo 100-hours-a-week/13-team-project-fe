@@ -1,16 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import styles from './VoteCreatePage.module.css'
 import { createVote } from '@/entities/vote'
 import { navigate } from '@/shared/lib/navigation'
+import { request } from '@/shared/lib/api'
 
 type LoadState = 'loading' | 'success' | 'error'
+type VoteStatus = 'GENERATING' | 'OPEN' | 'COUNTING' | 'COUNTED' | 'FAILED' | 'UNKNOWN' | null
+
+type MeetingDetailStateResponse = {
+  voteStatus: VoteStatus
+}
 
 export function VoteCreatePage() {
   const { search } = useLocation()
   const [status, setStatus] = useState<LoadState>('loading')
   const [error, setError] = useState<string | null>(null)
   const [voteId, setVoteId] = useState<number | null>(null)
+  const pollTimerRef = useRef<number | null>(null)
 
   const meetingId = useMemo(() => {
     const params = new URLSearchParams(search)
@@ -40,7 +47,6 @@ export function VoteCreatePage() {
     try {
       const response = await createVote(meetingId)
       setVoteId(response.voteId)
-      setStatus('success')
     } catch (err) {
       const message =
         err instanceof Error ? err.message : '투표 생성에 실패했습니다. 다시 시도해주세요.'
@@ -54,10 +60,52 @@ export function VoteCreatePage() {
     navigate(`/meetings/${meetingId}/votes/${voteId}`)
   }, [meetingId, voteId])
 
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      window.clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }, [])
+
+  const pollVoteStatus = useCallback(async () => {
+    if (!meetingId) return
+    try {
+      const state = await request<MeetingDetailStateResponse>(
+        `/api/v1/meetings/${meetingId}/state`,
+      )
+      const nextStatus = state.voteStatus ?? 'UNKNOWN'
+
+      if (nextStatus === 'OPEN') {
+        setStatus('success')
+        stopPolling()
+        return
+      }
+
+      if (nextStatus === 'FAILED') {
+        setStatus('error')
+        setError('투표 생성에 실패했습니다. 검색 반경을 넓혀 다시 시도해주세요.')
+        stopPolling()
+        return
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '투표 상태를 불러오지 못했습니다.')
+    }
+
+    pollTimerRef.current = window.setTimeout(pollVoteStatus, 1500)
+  }, [meetingId, stopPolling])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void handleCreate()
   }, [handleCreate])
+
+  useEffect(() => {
+    if (!meetingId || status === 'error') return
+    if (status === 'success') return
+    stopPolling()
+    pollTimerRef.current = window.setTimeout(pollVoteStatus, 1500)
+    return () => stopPolling()
+  }, [meetingId, pollVoteStatus, status, stopPolling])
 
   return (
     <div className={styles.page}>
