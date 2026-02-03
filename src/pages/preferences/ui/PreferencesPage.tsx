@@ -9,7 +9,6 @@ import {
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
-import { BackButton } from '@/shared/ui/back-button'
 
 function toggleItem(list: string[], code: string) {
   if (list.includes(code)) {
@@ -92,9 +91,6 @@ export function PreferencesPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div className={styles.backRow}>
-          <BackButton />
-        </div>
         {member ? (
           <div className={styles.profile}>
             {member.profileImageUrl ? (

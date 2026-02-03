@@ -4,6 +4,7 @@ import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import { request } from '@/shared/lib/api'
+import { BottomNav } from '@/shared/ui/bottom-nav'
 
 type MeetingDetailResponse = {
   meetingId: number
@@ -72,6 +73,7 @@ export function MeetingDetailPage() {
   const pollTimerRef = useRef<number | null>(null)
   const isFetchingStateRef = useRef(false)
   const stateSnapshotRef = useRef<MeetingDetailStateResponse | null>(null)
+  const lastNotifiedVoteIdRef = useRef<number | null>(null)
 
   const fetchDetail = useCallback(async () => {
     if (!meetingId) return
@@ -134,6 +136,18 @@ export function MeetingDetailPage() {
         prev.hasVotedCurrent !== state.hasVotedCurrent ||
         prev.finalSelected !== state.finalSelected ||
         (state.meetingStatus === 'READY' && prev.participants?.length !== state.participants?.length)
+
+      if (state.voteStatus === 'OPEN' && state.currentVoteId) {
+        const isNewVote = lastNotifiedVoteIdRef.current !== state.currentVoteId
+        if (isNewVote) {
+          lastNotifiedVoteIdRef.current = state.currentVoteId
+          setModalMessage(
+            prev?.currentVoteId
+              ? '재투표가 시작되었어요. 다시 참여해 주세요!'
+              : '투표가 시작되었어요. 지금 참여해 주세요!',
+          )
+        }
+      }
 
       stateSnapshotRef.current = state
 
@@ -334,16 +348,6 @@ export function MeetingDetailPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => navigate('/main')}
-          aria-label="메인으로 돌아가기"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
         <h1 className={styles.title}>모임 상세</h1>
       </header>
 
@@ -523,6 +527,8 @@ export function MeetingDetailPage() {
           </div>
         </div>
       )}
+
+      <BottomNav />
     </div>
   )
 }

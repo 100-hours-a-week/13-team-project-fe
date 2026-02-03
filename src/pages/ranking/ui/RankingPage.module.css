@@ -1,9 +1,11 @@
 .page {
   min-height: 100vh;
-  padding: 32px clamp(20px, 5vw, 40px) 140px;
+  padding: 28px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .header {

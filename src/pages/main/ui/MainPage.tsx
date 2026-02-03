@@ -6,7 +6,6 @@ import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import { HeaderLogo } from '@/shared/ui/header-logo'
 import { BottomNav } from '@/shared/ui/bottom-nav'
-import { BackButton } from '@/shared/ui/back-button'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 
@@ -39,6 +38,9 @@ export function MainPage() {
   const [meetings, setMeetings] = useState<
     Awaited<ReturnType<typeof getMyMeetings>>['items']
   >([])
+  const [nextCursor, setNextCursor] = useState<number | null>(null)
+  const [hasNext, setHasNext] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -49,6 +51,8 @@ export function MainPage() {
         const data = await getMyMeetings()
         if (!active) return
         setMeetings(data.items ?? [])
+        setNextCursor(data.nextCursor ?? null)
+        setHasNext(Boolean(data.hasNext))
         setMeetingsState('success')
       } catch (error) {
         if (!active) return
@@ -63,6 +67,24 @@ export function MainPage() {
       active = false
     }
   }, [])
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasNext) return
+    setIsLoadingMore(true)
+    setMeetingsError(null)
+    try {
+      const data = await getMyMeetings(nextCursor)
+      setMeetings((prev) => [...prev, ...(data.items ?? [])])
+      setNextCursor(data.nextCursor ?? null)
+      setHasNext(Boolean(data.hasNext))
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '모임 목록을 불러오지 못했어요.'
+      setMeetingsError(message)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   const handleJoinOpen = () => {
     setInviteCode('')
@@ -115,7 +137,6 @@ export function MainPage() {
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.brand}>
-            <BackButton />
             <HeaderLogo className={styles.brandTitle} label="모여밥" />
           </div>
           <button type="button" className={styles.logout} onClick={handleLogout}>
@@ -218,6 +239,16 @@ export function MainPage() {
                     </div>
                   </button>
                 ))}
+                {hasNext && (
+                  <button
+                    type="button"
+                    className={styles.loadMore}
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                  >
+                    {isLoadingMore ? '불러오는 중...' : '더 보기'}
+                  </button>
+                )}
               </div>
             )}
           </section>
