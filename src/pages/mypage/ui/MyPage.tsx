@@ -252,20 +252,7 @@ export function MyPage() {
         >
           회원정보
         </button>
-        <button
-          className={tab === 'reviews' ? styles.tabActive : ''}
-          onClick={() => setTab('reviews')}
-          type="button"
-        >
-          내 리뷰
-        </button>
-        <button
-          className={tab === 'coupons' ? styles.tabActive : ''}
-          onClick={() => setTab('coupons')}
-          type="button"
-        >
-          내 쿠폰
-        </button>
+        {/* 내 리뷰/내 쿠폰 탭은 일시적으로 숨김 */}
       </nav>
 
       <section className={styles.card}>
@@ -337,35 +324,7 @@ export function MyPage() {
           </>
         ) : null}
 
-        {tab === 'reviews' ? (
-          <div className={styles.list}>
-            {dummyReviews.map((review) => (
-              <article key={review.id} className={styles.listItem}>
-                <div className={styles.listHeader}>
-                  <strong>{review.title}</strong>
-                  <span className={styles.rating}>{'★'.repeat(review.rating)}</span>
-                </div>
-                <p>{review.content}</p>
-                <time>{review.date}</time>
-              </article>
-            ))}
-          </div>
-        ) : null}
-
-        {tab === 'coupons' ? (
-          <div className={styles.list}>
-            {dummyCoupons.map((coupon) => (
-              <article key={coupon.id} className={styles.listItem}>
-                <div className={styles.listHeader}>
-                  <strong>{coupon.title}</strong>
-                  <span className={styles.badge}>사용 가능</span>
-                </div>
-                <p>{coupon.description}</p>
-                <time>만료 {coupon.expiresAt}</time>
-              </article>
-            ))}
-          </div>
-        ) : null}
+        {/* 내 리뷰/내 쿠폰 콘텐츠는 일시적으로 숨김 */}
       </section>
 
       <div className={styles.bottomActions}>
