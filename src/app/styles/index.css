@@ -35,6 +35,16 @@ body {
 
 #root {
   min-height: 100vh;
+  background: var(--bg);
+}
+
+.appShell {
+  min-height: 100vh;
+  min-width: 320px;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--bg);
+  box-shadow: 0 0 0 9999px #ffffff;
 }
 
 a {

@@ -89,7 +89,8 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 6px 0;
 }
 
 .label {
@@ -224,12 +225,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 16px;
   z-index: 10;
 }
 
 .modal {
-  width: min(720px, 100%);
+  width: 100%;
+  max-width: 480px;
   background: var(--surface);
   border-radius: 20px;
   padding: 20px;
@@ -268,6 +270,12 @@
   background: var(--bg);
   flex-shrink: 0;
   touch-action: pan-x pan-y;
+  position: relative;
+  z-index: 1;
+}
+
+.map svg {
+  pointer-events: none;
 }
 
 .modalInfo {
@@ -293,12 +301,15 @@
   justify-content: center;
   background: var(--surface);
   padding: 12px 20px;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .modalActions .secondaryButton,
 .modalActions .primaryButton {
   flex: 1;
   max-width: 160px;
+  pointer-events: auto;
 }
 
 .serviceNote {

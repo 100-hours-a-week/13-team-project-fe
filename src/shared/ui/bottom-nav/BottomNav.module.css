@@ -12,7 +12,7 @@
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid var(--border);
   backdrop-filter: blur(12px);
-  width: min(520px, calc(100% - 32px));
+  width: min(480px, calc(100% - 32px));
   z-index: 5;
 }
 
@@ -43,7 +43,7 @@
 
 @media (max-width: 600px) {
   .bottomNav {
-    width: min(440px, calc(100% - 32px));
+    width: min(480px, calc(100% - 32px));
     bottom: 16px;
   }
 }

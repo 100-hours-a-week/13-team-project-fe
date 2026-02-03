@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './MeetingEditPage.module.css'
 import { navigate } from '@/shared/lib/navigation'
@@ -214,10 +214,6 @@ function composeDateTime(date: string, hour: string, minute: string) {
   return `${date}T${safeHour}:${safeMinute}`
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 export function MeetingEditPage() {
   const { meetingId } = useParams()
   const [step, setStep] = useState<Step>(1)
@@ -292,8 +288,16 @@ export function MeetingEditPage() {
       nextErrors.address = '모임 장소를 선택해주세요.'
     }
 
+    if (!form.voteDeadlineAt) {
+      nextErrors.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
+    } else if (!isFuture(form.voteDeadlineAt)) {
+      nextErrors.voteDeadlineAt = '과거 시간은 선택할 수 없습니다.'
+    } else if (form.scheduledAt && new Date(form.voteDeadlineAt) > new Date(form.scheduledAt)) {
+      nextErrors.voteDeadlineAt = '투표 마감은 모임 시간보다 이전이어야 합니다.'
+    }
+
     return nextErrors
-  }, [form.address, form.scheduledAt, form.title])
+  }, [form.address, form.scheduledAt, form.title, form.voteDeadlineAt])
 
   const step2Errors = useMemo(() => {
     const nextErrors: Errors = {}
@@ -315,14 +319,6 @@ export function MeetingEditPage() {
       nextErrors.searchRadiusM = '검색 반경은 1~3000m 범위입니다.'
     }
 
-    if (!form.voteDeadlineAt) {
-      nextErrors.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
-    } else if (!isFuture(form.voteDeadlineAt)) {
-      nextErrors.voteDeadlineAt = '현재보다 미래 시간이어야 합니다.'
-    } else if (form.scheduledAt && new Date(form.voteDeadlineAt) > new Date(form.scheduledAt)) {
-      nextErrors.voteDeadlineAt = '투표 마감은 모임 시간보다 이전이어야 합니다.'
-    }
-
     const swipeCount = Number(form.swipeCount)
     if (!form.swipeCount) {
       nextErrors.swipeCount = '스와이프 수를 입력해 주세요.'
@@ -331,7 +327,7 @@ export function MeetingEditPage() {
     }
 
     return nextErrors
-  }, [form.searchRadiusM, form.scheduledAt, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
+  }, [form.searchRadiusM, form.swipeCount, form.targetHeadcount])
 
   const isStep1Valid = useMemo(() => Object.keys(step1Errors).length === 0, [step1Errors])
   const isStep2Valid = useMemo(() => Object.keys(step2Errors).length === 0, [step2Errors])
@@ -509,13 +505,10 @@ export function MeetingEditPage() {
             setIsOutOfService(false)
           })
 
-          maps.event.addListener(map, 'click', (...args: unknown[]) => {
-            const first = args[0]
-            if (!isRecord(first)) return
-            const latLng = first['latLng'] as unknown
-            if (!latLng || typeof (latLng as KakaoLatLng).getLat !== 'function') return
-
-            const latlng = latLng as KakaoLatLng
+          const handleMapClick = (...args: unknown[]) => {
+            const first = args[0] as { latLng?: KakaoLatLng } | undefined
+            const latlng = first?.latLng
+            if (!latlng) return
             if (!bounds.contain(latlng)) {
               setIsOutOfService(true)
               return
@@ -524,7 +517,10 @@ export function MeetingEditPage() {
             marker.setVisible(true)
             setSelectedPoint({ lat: latlng.getLat(), lng: latlng.getLng() })
             setIsOutOfService(false)
-          })
+          }
+
+          maps.event.addListener(map, 'click', handleMapClick)
+          maps.event.addListener(map, 'mouseup', handleMapClick)
 
           maps.event.addListener(map, 'idle', () => {
             const centerPoint = map.getCenter()
@@ -539,12 +535,32 @@ export function MeetingEditPage() {
       })
   }, [appKey, form.lat, form.lng, isModalOpen])
 
-  const updateField = (key: keyof FormState, value: string | boolean) => {
+  const updateField = useCallback((key: keyof FormState, value: string | boolean) => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
     }))
-  }
+  }, [])
+
+  const updateVoteDeadlineAuto = useCallback(
+    (value: string) => {
+      updateField('voteDeadlineAt', value)
+      if (value && new Date(value) < new Date()) {
+        setErrors((prev) => ({
+          ...prev,
+          voteDeadlineAt: '과거 시간은 선택할 수 없습니다.',
+        }))
+        return
+      }
+      setErrors((prev) => {
+        if (!prev.voteDeadlineAt) return prev
+        const next = { ...prev }
+        delete next.voteDeadlineAt
+        return next
+      })
+    },
+    [updateField],
+  )
 
   const markTouched = (key: keyof typeof touched) => {
     setTouched((prev) => ({ ...prev, [key]: true }))
@@ -636,7 +652,7 @@ export function MeetingEditPage() {
         setTimeNotice('투표 마감 시간은 최대 모임 시간까지만 설정이 가능합니다')
       } else if (nextValue && new Date(nextValue) < new Date()) {
         updateField('voteDeadlineAt', form.scheduledAt)
-        setTimeNotice('투표 마감 시간은 현재 시간 이후여야 합니다.')
+        setTimeNotice('과거 시간은 선택할 수 없습니다.')
       } else {
         updateField('voteDeadlineAt', nextValue)
       }
@@ -648,7 +664,7 @@ export function MeetingEditPage() {
         nextValue &&
         new Date(form.voteDeadlineAt) > new Date(nextValue)
       ) {
-        updateField('voteDeadlineAt', nextValue)
+        updateVoteDeadlineAuto(nextValue)
       }
     }
     setTimePicker(null)
@@ -854,35 +870,37 @@ export function MeetingEditPage() {
               onClick={() => openTimePicker('voteDeadlineAt', 30)}
               onBlur={() => markTouched('voteDeadlineAt')}
             />
-            <div className={styles.quickRow}>
-              {canUseOffset(60) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(60)}
-                >
-                  모임 시간 1시간 전
-                </button>
-              )}
-              {canUseOffset(30) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(30)}
-                >
-                  모임 시간 30분 전
-                </button>
-              )}
-              {canUseOffset(24 * 60) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(24 * 60)}
-                >
-                  모임 시간 하루 전
-                </button>
-              )}
-            </div>
+            {(canUseOffset(60) || canUseOffset(30) || canUseOffset(24 * 60)) && (
+              <div className={styles.quickRow}>
+                {canUseOffset(60) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(60)}
+                  >
+                    모임 시간 1시간 전
+                  </button>
+                )}
+                {canUseOffset(30) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(30)}
+                  >
+                    모임 시간 30분 전
+                  </button>
+                )}
+                {canUseOffset(24 * 60) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(24 * 60)}
+                  >
+                    모임 시간 하루 전
+                  </button>
+                )}
+              </div>
+            )}
             {shouldShowError('voteDeadlineAt', form.voteDeadlineAt) && (
               <span className={styles.error}>{errors.voteDeadlineAt}</span>
             )}
@@ -897,15 +915,9 @@ export function MeetingEditPage() {
                 value={form.address}
                 readOnly
                 placeholder="지도에서 위치를 선택해 주세요."
+                onClick={handleOpenMap}
                 onBlur={() => markTouched('address')}
               />
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={handleOpenMap}
-              >
-                위치 선택
-              </button>
             </div>
             {shouldShowError('address', form.address) && (
               <span className={styles.error}>{errors.address}</span>

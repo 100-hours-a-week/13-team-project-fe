@@ -278,8 +278,16 @@ export function MeetingCreatePage() {
       next.address = '서비스 지역에서 장소를 선택해 주세요.'
     }
 
+    if (!form.voteDeadlineAt) {
+      next.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
+    } else if (!isFuture(form.voteDeadlineAt)) {
+      next.voteDeadlineAt = '과거 시간은 선택할 수 없습니다.'
+    } else if (form.scheduledAt && new Date(form.voteDeadlineAt) > new Date(form.scheduledAt)) {
+      next.voteDeadlineAt = '투표 마감은 모임 시간보다 이전이어야 합니다.'
+    }
+
     return next
-  }, [form.address, form.lat, form.lng, form.scheduledAt, form.title])
+  }, [form.address, form.lat, form.lng, form.scheduledAt, form.title, form.voteDeadlineAt])
 
   const step2Errors = useMemo(() => {
     const next: Errors = {}
@@ -302,14 +310,6 @@ export function MeetingCreatePage() {
       next.searchRadiusM = '검색 반경은 1~3000m 범위입니다.'
     }
 
-    if (!form.voteDeadlineAt) {
-      next.voteDeadlineAt = '투표 마감 시간을 입력해 주세요.'
-    } else if (!isFuture(form.voteDeadlineAt)) {
-      next.voteDeadlineAt = '현재보다 미래 시간이어야 합니다.'
-    } else if (form.scheduledAt && new Date(form.voteDeadlineAt) > new Date(form.scheduledAt)) {
-      next.voteDeadlineAt = '투표 마감은 모임 시간보다 이전이어야 합니다.'
-    }
-
     const swipeCount = Number(form.swipeCount)
     if (!form.swipeCount) {
       next.swipeCount = '스와이프 수를 입력해 주세요.'
@@ -318,7 +318,7 @@ export function MeetingCreatePage() {
     }
 
     return next
-  }, [form.searchRadiusM, form.scheduledAt, form.swipeCount, form.targetHeadcount, form.voteDeadlineAt])
+  }, [form.searchRadiusM, form.swipeCount, form.targetHeadcount])
 
   const isStep1Valid = useMemo(() => Object.keys(step1Errors).length === 0, [step1Errors])
   const isStep2Valid = useMemo(() => Object.keys(step2Errors).length === 0, [step2Errors])
@@ -447,13 +447,10 @@ export function MeetingCreatePage() {
             setIsOutOfService(false)
           })
 
-          maps.event.addListener(map, 'click', (...args: unknown[]) => {
-            const first = args[0]
-            if (!isRecord(first)) return
-            const latLng = first['latLng'] as unknown
-            if (!latLng || typeof (latLng as KakaoLatLng).getLat !== 'function') return
-
-            const latlng = latLng as KakaoLatLng
+          const handleMapClick = (...args: unknown[]) => {
+            const first = args[0] as { latLng?: KakaoLatLng } | undefined
+            const latlng = first?.latLng
+            if (!latlng) return
             if (!bounds.contain(latlng)) {
               setIsOutOfService(true)
               return
@@ -462,7 +459,10 @@ export function MeetingCreatePage() {
             marker.setVisible(true)
             setSelectedPoint({ lat: latlng.getLat(), lng: latlng.getLng() })
             setIsOutOfService(false)
-          })
+          }
+
+          maps.event.addListener(map, 'click', handleMapClick)
+          maps.event.addListener(map, 'mouseup', handleMapClick)
 
           maps.event.addListener(map, 'idle', () => {
             const centerPoint = map.getCenter()
@@ -574,7 +574,7 @@ export function MeetingCreatePage() {
         setTimeNotice('투표 마감 시간은 최대 모임 시간까지만 설정이 가능합니다')
       } else if (nextValue && new Date(nextValue) < new Date()) {
         updateField('voteDeadlineAt', form.scheduledAt)
-        setTimeNotice('투표 마감 시간은 현재 시간 이후여야 합니다.')
+        setTimeNotice('과거 시간은 선택할 수 없습니다.')
       } else {
         updateField('voteDeadlineAt', nextValue)
       }
@@ -587,6 +587,12 @@ export function MeetingCreatePage() {
         new Date(form.voteDeadlineAt) > new Date(nextValue)
       ) {
         updateField('voteDeadlineAt', nextValue)
+        if (new Date(nextValue) < new Date()) {
+          setErrors((prev) => ({
+            ...prev,
+            voteDeadlineAt: '과거 시간은 선택할 수 없습니다.',
+          }))
+        }
       }
     }
     setTimePicker(null)
@@ -795,35 +801,37 @@ export function MeetingCreatePage() {
               onClick={() => openTimePicker('voteDeadlineAt', 30)}
               onBlur={() => markTouched('voteDeadlineAt')}
             />
-            <div className={styles.quickRow}>
-              {canUseOffset(60) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(60)}
-                >
-                  모임 시간 1시간 전
-                </button>
-              )}
-              {canUseOffset(30) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(30)}
-                >
-                  모임 시간 30분 전
-                </button>
-              )}
-              {canUseOffset(24 * 60) && (
-                <button
-                  type="button"
-                  className={styles.quickButton}
-                  onClick={() => applyVoteDeadlineOffset(24 * 60)}
-                >
-                  모임 시간 하루 전
-                </button>
-              )}
-            </div>
+            {(canUseOffset(60) || canUseOffset(30) || canUseOffset(24 * 60)) && (
+              <div className={styles.quickRow}>
+                {canUseOffset(60) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(60)}
+                  >
+                    모임 시간 1시간 전
+                  </button>
+                )}
+                {canUseOffset(30) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(30)}
+                  >
+                    모임 시간 30분 전
+                  </button>
+                )}
+                {canUseOffset(24 * 60) && (
+                  <button
+                    type="button"
+                    className={styles.quickButton}
+                    onClick={() => applyVoteDeadlineOffset(24 * 60)}
+                  >
+                    모임 시간 하루 전
+                  </button>
+                )}
+              </div>
+            )}
             {shouldShowError('voteDeadlineAt', form.voteDeadlineAt) && (
               <span className={styles.error}>{errors.voteDeadlineAt}</span>
             )}
@@ -838,15 +846,9 @@ export function MeetingCreatePage() {
                 value={form.address}
                 readOnly
                 placeholder="지도에서 위치를 선택해 주세요."
+                onClick={() => setIsModalOpen(true)}
                 onBlur={() => markTouched('address')}
               />
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-              >
-                위치 선택
-              </button>
             </div>
             {shouldShowError('address', form.address) && (
               <span className={styles.error}>{errors.address}</span>
