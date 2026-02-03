@@ -93,6 +93,10 @@ export function VoteTop3Page() {
         navigate(`/meetings/${parsedMeetingId}`)
         return
       }
+      if (message.includes('vote_deadline_passed')) {
+        setAlertMessage('재추천 요청에 실패했습니다. (투표 시간 마감)')
+        return
+      }
       setAlertMessage(`재추천 요청에 실패했습니다. (${message})`)
     } finally {
       setRecoState('idle')
