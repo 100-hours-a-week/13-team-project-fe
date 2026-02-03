@@ -89,6 +89,10 @@ export function VoteTop3Page() {
       navigate(`/meetings/${parsedMeetingId}`)
     } catch (err) {
       const message = err instanceof Error ? err.message : '재추천 요청에 실패했습니다.'
+      if (message.includes('vote_not_open')) {
+        navigate(`/meetings/${parsedMeetingId}`)
+        return
+      }
       setAlertMessage(`재추천 요청에 실패했습니다. (${message})`)
     } finally {
       setRecoState('idle')

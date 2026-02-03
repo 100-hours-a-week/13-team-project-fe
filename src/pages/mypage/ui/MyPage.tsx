@@ -14,37 +14,6 @@ import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 
-const dummyReviews = [
-  {
-    id: 'review-1',
-    title: '청담 한정식',
-    date: '2025-01-10',
-    rating: 5,
-    content: '정말 맛있었어요! 다음에 또 올게요.',
-  },
-  {
-    id: 'review-2',
-    title: '이탈리안 키친',
-    date: '2025-01-05',
-    rating: 4,
-    content: '파스타가 훌륭했어요.',
-  },
-]
-
-const dummyCoupons = [
-  {
-    id: 'coupon-1',
-    title: '모임 예약 10% 할인',
-    description: '팀 모임 예약 시 즉시 사용 가능',
-    expiresAt: '2025-03-30',
-  },
-  {
-    id: 'coupon-2',
-    title: '신규 맛집 리뷰 쿠폰',
-    description: '리뷰 작성 시 자동 지급',
-    expiresAt: '2025-04-15',
-  },
-]
 
 function toggleItem(list: string[], code: string) {
   if (list.includes(code)) {
@@ -252,20 +221,7 @@ export function MyPage() {
         >
           회원정보
         </button>
-        <button
-          className={tab === 'reviews' ? styles.tabActive : ''}
-          onClick={() => setTab('reviews')}
-          type="button"
-        >
-          내 리뷰
-        </button>
-        <button
-          className={tab === 'coupons' ? styles.tabActive : ''}
-          onClick={() => setTab('coupons')}
-          type="button"
-        >
-          내 쿠폰
-        </button>
+        {/* 내 리뷰/내 쿠폰 탭은 일시적으로 숨김 */}
       </nav>
 
       <section className={styles.card}>
@@ -337,35 +293,7 @@ export function MyPage() {
           </>
         ) : null}
 
-        {tab === 'reviews' ? (
-          <div className={styles.list}>
-            {dummyReviews.map((review) => (
-              <article key={review.id} className={styles.listItem}>
-                <div className={styles.listHeader}>
-                  <strong>{review.title}</strong>
-                  <span className={styles.rating}>{'★'.repeat(review.rating)}</span>
-                </div>
-                <p>{review.content}</p>
-                <time>{review.date}</time>
-              </article>
-            ))}
-          </div>
-        ) : null}
-
-        {tab === 'coupons' ? (
-          <div className={styles.list}>
-            {dummyCoupons.map((coupon) => (
-              <article key={coupon.id} className={styles.listItem}>
-                <div className={styles.listHeader}>
-                  <strong>{coupon.title}</strong>
-                  <span className={styles.badge}>사용 가능</span>
-                </div>
-                <p>{coupon.description}</p>
-                <time>만료 {coupon.expiresAt}</time>
-              </article>
-            ))}
-          </div>
-        ) : null}
+        {/* 내 리뷰/내 쿠폰 콘텐츠는 일시적으로 숨김 */}
       </section>
 
       <div className={styles.bottomActions}>

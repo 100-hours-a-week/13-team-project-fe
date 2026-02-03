@@ -59,16 +59,6 @@ export function VoteWaitPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => window.history.back()}
-          aria-label="뒤로가기"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
         <h1 className={styles.title}>투표 대기</h1>
       </header>
 

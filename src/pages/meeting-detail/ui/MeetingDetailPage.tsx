@@ -74,6 +74,7 @@ export function MeetingDetailPage() {
   const isFetchingStateRef = useRef(false)
   const stateSnapshotRef = useRef<MeetingDetailStateResponse | null>(null)
   const lastNotifiedVoteIdRef = useRef<number | null>(null)
+  const notifiedVoteIdsRef = useRef<Set<number>>(new Set())
 
   const fetchDetail = useCallback(async () => {
     if (!meetingId) return
@@ -92,6 +93,19 @@ export function MeetingDetailPage() {
   const applyStateToDetail = useCallback((state: MeetingDetailStateResponse) => {
     setData((prev) => {
       if (!prev) return prev
+      if (notifiedVoteIdsRef.current.size === 0) {
+        const stored = sessionStorage.getItem('notifiedVoteIds')
+        if (stored) {
+          try {
+            const ids = JSON.parse(stored) as number[]
+            if (Array.isArray(ids)) {
+              notifiedVoteIdsRef.current = new Set(ids)
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
       return {
         ...prev,
         meetingStatus: state.meetingStatus,
@@ -139,8 +153,14 @@ export function MeetingDetailPage() {
 
       if (state.voteStatus === 'OPEN' && state.currentVoteId) {
         const isNewVote = lastNotifiedVoteIdRef.current !== state.currentVoteId
-        if (isNewVote) {
+        const alreadyNotified = notifiedVoteIdsRef.current.has(state.currentVoteId)
+        if (isNewVote && !alreadyNotified) {
           lastNotifiedVoteIdRef.current = state.currentVoteId
+          notifiedVoteIdsRef.current.add(state.currentVoteId)
+          sessionStorage.setItem(
+            'notifiedVoteIds',
+            JSON.stringify(Array.from(notifiedVoteIdsRef.current)),
+          )
           setModalMessage(
             prev?.currentVoteId
               ? '재투표가 시작되었어요. 다시 참여해 주세요!'
