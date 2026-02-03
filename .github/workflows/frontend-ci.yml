@@ -14,6 +14,7 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-24.04-arm
+    environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
 
     steps:
       - name: Checkout
