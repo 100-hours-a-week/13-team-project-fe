@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 32px clamp(20px, 5vw, 40px);
+  padding: 32px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -17,6 +17,7 @@
   margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
+  color: var(--ink);
 }
 
 .backButton {

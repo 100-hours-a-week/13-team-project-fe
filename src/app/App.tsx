@@ -6,7 +6,9 @@ export function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRouter />
+        <div className="appShell">
+          <AppRouter />
+        </div>
       </BrowserRouter>
     </AuthProvider>
   )

@@ -1,15 +1,17 @@
 .page {
   min-height: 100vh;
-  padding: 40px 18px 140px;
+  padding: 28px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   color: #1f1b16;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .header {
-  width: min(100%, 960px);
-  margin: 0 auto 8px;
+  width: 100%;
+  margin: 0 0 8px;
   display: flex;
   align-items: center;
 }
@@ -17,8 +19,8 @@
 .hero,
 .section,
 .footer {
-  width: min(100%, 960px);
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
 }
 
 .navLink {
@@ -98,9 +100,19 @@
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 18px);
   transform: translateX(-50%);
-  width: min(360px, calc(100% - 32px));
+  width: min(480px, calc(100% - 32px));
   z-index: 40;
   animation: floatUp 2.6s ease-in-out infinite;
+}
+
+@media (min-width: 768px) {
+  .page {
+    max-width: 480px;
+  }
+
+  .floatingCta {
+    width: min(360px, 100%);
+  }
 }
 
 .heroMedia {
@@ -284,36 +296,6 @@
 
 .ctaSentinel {
   height: 1px;
-}
-
-@media (min-width: 900px) {
-  .page {
-    padding: 32px 32px 120px;
-  }
-
-  .hero {
-    grid-template-columns: 1.1fr 0.9fr;
-    align-items: center;
-    padding: 32px;
-  }
-
-  .featureList {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .stepList {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .ctaCard {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-  }
-
-  .ctaDock {
-    justify-self: end;
-    min-width: 240px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

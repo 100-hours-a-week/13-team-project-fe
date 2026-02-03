@@ -11,7 +11,6 @@ import {
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
-import { BackButton } from '@/shared/ui/back-button'
 
 export function TermsPage() {
   const { member, setMember } = useAuth()
@@ -112,7 +111,6 @@ export function TermsPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <BackButton />
         <div>
           <h1>이용약관 동의</h1>
           <p>서비스 이용을 위해 필수 약관에 동의해 주세요.</p>

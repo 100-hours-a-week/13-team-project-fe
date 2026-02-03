@@ -1,10 +1,12 @@
 .page {
   min-height: 100vh;
   background: #f5f6f8;
-  padding: 40px clamp(20px, 8vw, 80px) 140px;
+  padding: 28px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .header {

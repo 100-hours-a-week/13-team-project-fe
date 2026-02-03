@@ -24,6 +24,7 @@ export function VoteTop3Page() {
   const [isHost, setIsHost] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [recoState, setRecoState] = useState<LoadState>('idle')
   const [finalState, setFinalState] = useState<LoadState>('idle')
@@ -85,9 +86,10 @@ export function VoteTop3Page() {
         { method: 'POST' },
       )
       await getVoteCandidates(parsedMeetingId, parsedVoteId)
-      navigate(`/meetings/${parsedMeetingId}/votes/${parsedVoteId}`)
+      navigate(`/meetings/${parsedMeetingId}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '재추천 요청에 실패했습니다.')
+      const message = err instanceof Error ? err.message : '재추천 요청에 실패했습니다.'
+      setAlertMessage(`재추천 요청에 실패했습니다. (${message})`)
     } finally {
       setRecoState('idle')
     }
@@ -164,27 +166,21 @@ export function VoteTop3Page() {
                       <div className={styles.imagePlaceholder}>이미지 없음</div>
                     )}
                   </div>
-                  <div className={styles.info}>
-                    <div className={styles.nameRow}>
-                      <h3 className={styles.name}>{item.restaurantName}</h3>
-                      <span className={styles.categoryInline}>{item.categoryName}</span>
-                    </div>
-                    <div className={styles.meta}>
-                      <span>별점 {item.rating}</span>
-                      <span>거리 {item.distanceM}m</span>
-                    </div>
-                    <div className={styles.address}>{address}</div>
+                <div className={styles.info}>
+                  <div className={styles.nameRow}>
+                    <h3 className={styles.name}>{item.restaurantName}</h3>
+                    <span className={styles.categoryInline}>{item.categoryName}</span>
                   </div>
+                  <div className={styles.meta}>
+                    <span>별점 {item.rating}</span>
+                    <span>거리 {item.distanceM}m</span>
+                  </div>
+                  <div className={styles.address}>{address}</div>
                 </div>
-                <div className={styles.likeBox}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 21s-6.5-4.35-9-8.5C1.5 9 3.5 6 7 6c2.1 0 3.4 1.2 5 3 1.6-1.8 2.9-3 5-3 3.5 0 5.5 3 4 6.5-2.5 4.15-9 8.5-9 8.5z" />
-                  </svg>
-                  <span>{item.likeCount}</span>
-                </div>
-              </button>
-            )
-          })}
+              </div>
+            </button>
+          )
+        })}
         </section>
       )}
 
@@ -206,6 +202,22 @@ export function VoteTop3Page() {
           >
             최종 선택 확정
           </button>
+        </div>
+      )}
+
+      {alertMessage && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setAlertMessage(null)}>
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className={styles.modalText}>{alertMessage}</p>
+            <button type="button" className={styles.modalButton} onClick={() => setAlertMessage(null)}>
+              확인
+            </button>
+          </div>
         </div>
       )}
     </div>

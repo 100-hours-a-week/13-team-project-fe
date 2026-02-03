@@ -8,7 +8,8 @@ export async function participateMeeting(inviteCode: string) {
   })
 }
 
-export async function getMyMeetings() {
+export async function getMyMeetings(cursor?: number | null) {
   // TODO: 임시 memberId 파라미터 제거 후 실제 인증 기반 호출로 변경
-  return request<MyMeetingsResponse>('/api/v1/meetings')
+  const query = cursor ? `?cursor=${cursor}` : ''
+  return request<MyMeetingsResponse>(`/api/v1/meetings${query}`)
 }
