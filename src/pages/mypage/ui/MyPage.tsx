@@ -14,37 +14,6 @@ import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 
-const dummyReviews = [
-  {
-    id: 'review-1',
-    title: '청담 한정식',
-    date: '2025-01-10',
-    rating: 5,
-    content: '정말 맛있었어요! 다음에 또 올게요.',
-  },
-  {
-    id: 'review-2',
-    title: '이탈리안 키친',
-    date: '2025-01-05',
-    rating: 4,
-    content: '파스타가 훌륭했어요.',
-  },
-]
-
-const dummyCoupons = [
-  {
-    id: 'coupon-1',
-    title: '모임 예약 10% 할인',
-    description: '팀 모임 예약 시 즉시 사용 가능',
-    expiresAt: '2025-03-30',
-  },
-  {
-    id: 'coupon-2',
-    title: '신규 맛집 리뷰 쿠폰',
-    description: '리뷰 작성 시 자동 지급',
-    expiresAt: '2025-04-15',
-  },
-]
 
 function toggleItem(list: string[], code: string) {
   if (list.includes(code)) {
