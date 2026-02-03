@@ -1,6 +1,7 @@
 import styles from './LandingPage.module.css'
 import { startKakaoLogin } from '@/shared/lib/api'
 import kakaoLogin from '@/assets/kakao_login_large_wide.png'
+import servicePreview from '@/assets/servicePreview.png'
 import { BackButton } from '@/shared/ui/back-button'
 
 const features = [
@@ -55,21 +56,9 @@ export function LandingPage() {
           </p>
         </div>
         <div className={styles.heroMedia}>
-          <div className={styles.mediaFrame}>
-            <svg viewBox="0 0 24 24" aria-hidden className={styles.mediaIcon}>
-              <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="9" cy="10" r="1.6" fill="currentColor" />
-              <path
-                d="M6 16l4-4 3 3 2-2 3 3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>서비스 화면 미리보기</span>
-          </div>
+          <figure className={styles.mediaFrame}>
+            <img className={styles.previewImage} src={servicePreview} alt="모여밥 서비스 미리보기" />
+          </figure>
         </div>
       </section>
 
