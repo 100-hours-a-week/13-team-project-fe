@@ -19,7 +19,7 @@ function toggleItem(list: string[], code: string) {
 }
 
 export function PreferencesPage() {
-  const { member, setMember } = useAuth()
+  const { member, setMember, refresh } = useAuth()
   const displayName = member?.nickname ?? '회원'
   const profileInitial = displayName.trim().charAt(0) || 'M'
   const [allergyGroups, setAllergyGroups] = useState<PreferenceChoice[]>([])
@@ -81,6 +81,7 @@ export function PreferencesPage() {
       if (member && data?.userStatus) {
         setMember({ ...member, status: data.userStatus })
       }
+      await refresh()
       navigate('/main')
     } catch {
       setError('취향 저장에 실패했어요. 잠시 후 다시 시도해 주세요.')

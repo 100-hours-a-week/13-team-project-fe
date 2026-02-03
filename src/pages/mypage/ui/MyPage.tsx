@@ -63,7 +63,7 @@ type PrefState = {
 }
 
 export function MyPage() {
-  const { member, setMember } = useAuth()
+  const { member, setMember, refresh } = useAuth()
   const [tab, setTab] = useState<TabKey>('profile')
   const [allergyGroups, setAllergyGroups] = useState<PreferenceChoice[]>([])
   const [categories, setCategories] = useState<PreferenceChoice[]>([])
@@ -158,6 +158,7 @@ export function MyPage() {
       if (member && data?.userStatus) {
         setMember({ ...member, status: data.userStatus })
       }
+      await refresh()
       setSuccess('취향이 저장되었습니다.')
     } catch {
       setError('취향 저장에 실패했어요. 잠시 후 다시 시도해 주세요.')
