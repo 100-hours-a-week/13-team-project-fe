@@ -109,23 +109,24 @@
 }
 
 .mediaFrame {
-  border: 1px dashed #d9cbb6;
-  background: #f5efe6;
-  border-radius: 18px;
-  aspect-ratio: 16 / 9;
+  border: 1px solid #e6dac7;
+  background: #ffffff;
+  border-radius: 20px;
   display: grid;
-  place-items: center;
-  color: #8a7c6a;
-  text-align: center;
-  gap: 8px;
-  padding: 16px;
-  font-size: 13px;
+  gap: 10px;
+  justify-items: center;
+  padding: 14px;
+  box-shadow: 0 16px 30px rgba(63, 42, 12, 0.08);
 }
 
-.mediaIcon {
-  width: 32px;
-  height: 32px;
+.previewImage {
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #f6efe6;
 }
+
 
 
 .section {
