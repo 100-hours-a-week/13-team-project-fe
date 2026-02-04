@@ -97,6 +97,10 @@ export function VoteTop3Page() {
         setAlertMessage('재추천 요청에 실패했습니다. (투표 시간 마감)')
         return
       }
+      if (message.includes('invalid_request')) {
+        setAlertMessage('재추천 요청에 실패했습니다. (재추천은 한 번만 가능합니다.)')
+        return
+      }
       setAlertMessage(`재추천 요청에 실패했습니다. (${message})`)
     } finally {
       setRecoState('idle')

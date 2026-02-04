@@ -76,6 +76,19 @@ export function MeetingDetailPage() {
   const lastNotifiedVoteIdRef = useRef<number | null>(null)
   const notifiedVoteIdsRef = useRef<Set<number>>(new Set())
 
+  useEffect(() => {
+    const stored = sessionStorage.getItem('notifiedVoteIds')
+    if (!stored) return
+    try {
+      const ids = JSON.parse(stored) as number[]
+      if (Array.isArray(ids)) {
+        notifiedVoteIdsRef.current = new Set(ids)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const fetchDetail = useCallback(async () => {
     if (!meetingId) return
     try {
@@ -93,19 +106,6 @@ export function MeetingDetailPage() {
   const applyStateToDetail = useCallback((state: MeetingDetailStateResponse) => {
     setData((prev) => {
       if (!prev) return prev
-      if (notifiedVoteIdsRef.current.size === 0) {
-        const stored = sessionStorage.getItem('notifiedVoteIds')
-        if (stored) {
-          try {
-            const ids = JSON.parse(stored) as number[]
-            if (Array.isArray(ids)) {
-              notifiedVoteIdsRef.current = new Set(ids)
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }
       return {
         ...prev,
         meetingStatus: state.meetingStatus,
@@ -151,12 +151,13 @@ export function MeetingDetailPage() {
         prev.finalSelected !== state.finalSelected ||
         (state.meetingStatus === 'READY' && prev.participants?.length !== state.participants?.length)
 
-      if (state.voteStatus === 'OPEN' && state.currentVoteId) {
-        const isNewVote = lastNotifiedVoteIdRef.current !== state.currentVoteId
-        const alreadyNotified = notifiedVoteIdsRef.current.has(state.currentVoteId)
+      const currentVoteId = state.currentVoteId ? Number(state.currentVoteId) : null
+      if (state.voteStatus === 'OPEN' && currentVoteId) {
+        const isNewVote = lastNotifiedVoteIdRef.current !== currentVoteId
+        const alreadyNotified = notifiedVoteIdsRef.current.has(currentVoteId)
         if (isNewVote && !alreadyNotified) {
-          lastNotifiedVoteIdRef.current = state.currentVoteId
-          notifiedVoteIdsRef.current.add(state.currentVoteId)
+          lastNotifiedVoteIdRef.current = currentVoteId
+          notifiedVoteIdsRef.current.add(currentVoteId)
           sessionStorage.setItem(
             'notifiedVoteIds',
             JSON.stringify(Array.from(notifiedVoteIdsRef.current)),
