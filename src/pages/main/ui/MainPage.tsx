@@ -4,7 +4,7 @@ import { getMyMeetings, participateMeeting } from '@/entities/meeting'
 import { logout } from '@/shared/lib/api'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
-import { HeaderLogo } from '@/shared/ui/header-logo'
+import logoImage from '@/assets/logo.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
@@ -137,7 +137,7 @@ export function MainPage() {
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.brand}>
-            <HeaderLogo className={styles.brandTitle} label="모여밥" />
+            <img className={styles.brandLogo} src={logoImage} alt="모여밥" />
           </div>
           <button type="button" className={styles.logout} onClick={handleLogout}>
             로그아웃
