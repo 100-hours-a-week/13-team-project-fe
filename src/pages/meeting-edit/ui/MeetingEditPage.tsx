@@ -321,9 +321,9 @@ export function MeetingEditPage() {
 
     const swipeCount = Number(form.swipeCount)
     if (!form.swipeCount) {
-      nextErrors.swipeCount = '스와이프 수를 입력해 주세요.'
+      nextErrors.swipeCount = '음식점 후보 수를 입력해 주세요.'
     } else if (!Number.isFinite(swipeCount) || swipeCount < 1 || swipeCount > 15) {
-      nextErrors.swipeCount = '스와이프 수는 1~15입니다.'
+      nextErrors.swipeCount = '음식점 후보 수는 1~15입니다.'
     }
 
     return nextErrors
@@ -971,7 +971,7 @@ export function MeetingEditPage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>스와이프 수</span>
+            <span className={styles.label}>음식점 후보 수</span>
             <input
               className={styles.input}
               type="number"
