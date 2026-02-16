@@ -1,5 +1,5 @@
-name: FE CD PIPELINE
-run-name: FE CD • ${{ github.event.workflow_run.head_sha }}
+name: FE V2 CD PIPELINE
+run-name: FE V2 CD • ${{ github.event.workflow_run.head_sha }}
 
 on:
   workflow_run:
@@ -9,20 +9,19 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 concurrency:
-  group: fe-cd-${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  group: fe-v2-cd-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 jobs:
-  cd:
+  deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     runs-on: ubuntu-24.04-arm
     environment: ${{ github.event.workflow_run.head_branch == 'main' && 'production' || 'develop' }}
     env:
-      DEPLOY_PATH: /var/www/html
-      BACKUP_PATH: /var/www/html-backup
-      ROLLBACK_SCRIPT: /home/{{ secrets.EC2_USER }}/scripts/frontend/rollback.sh
+      AWS_REGION: ap-northeast-2
 
     steps:
       - name: Download build artifact
@@ -34,37 +33,45 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Verify build output
-        run: test -d dist
+        run: test -d dist && test -f dist/index.html
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s' "${{ secrets.EC2_KEY_PAIR }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.EC2_ELASTIC_IP }}" >> ~/.ssh/known_hosts
-          echo "SSH_CMD=ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }}" >> "$GITHUB_ENV"
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Backup current build
+      - name: Deploy to S3
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          $SSH_CMD "if [ -d \"$DEPLOY_PATH\" ]; then sudo mkdir -p \"$BACKUP_PATH\" && sudo rsync -az --delete \"$DEPLOY_PATH\"/ \"$BACKUP_PATH\"/; fi"
-          echo "ROLLBACK_ENABLED=true" >> "$GITHUB_ENV"
+          # HTML — no-cache (항상 최신)
+          aws s3 sync dist/ "s3://${S3_BUCKET}" \
+            --delete \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --exclude "*" --include "*.html"
 
-      - name: Deploy to EC2
+          # Assets (JS/CSS/이미지) — 장기 캐싱 (Vite content hash)
+          aws s3 sync dist/ "s3://${S3_BUCKET}" \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "*.html"
+
+      - name: Invalidate CloudFront cache
+        env:
+          CF_DISTRIBUTION_ID: ${{ secrets.CF_DISTRIBUTION_ID }}
         run: |
-          rsync -az --delete -e "ssh -p ${{ secrets.SSH_PORT }}" dist/ \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_ELASTIC_IP }}:/tmp/fe-dist-${{ github.event.workflow_run.head_sha }}/
-          $SSH_CMD "sudo rsync -az --delete /tmp/fe-dist-${{ github.event.workflow_run.head_sha }}/ $DEPLOY_PATH/ && sudo rm -rf /tmp/fe-dist-${{ github.event.workflow_run.head_sha }}"
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id "${CF_DISTRIBUTION_ID}" \
+            --paths "/*" \
+            --query "Invalidation.Id" --output text)
+          echo "Invalidation ID: ${INVALIDATION_ID}"
 
       - name: Health check
         run: |
-          $SSH_CMD "curl -sf --retry 10 --retry-delay 3 https://${{ secrets.HEALTH_CHECK_URL }}"
-
-      - name: Rollback on failure
-        id: rollback
-        if: (failure() || cancelled()) && env.ROLLBACK_ENABLED == 'true'
-        continue-on-error: true
-        run: |
-          $SSH_CMD "if [ -d \"$BACKUP_PATH\" ]; then sudo rsync -az --delete \"$BACKUP_PATH\"/ \"$DEPLOY_PATH\"/; fi"
+          sleep 5
+          curl -sf --retry 5 --retry-delay 3 "https://dev.moyeobab.com" > /dev/null
+          echo "Health check passed"
 
       - name: Notify Discord
         if: always()
@@ -77,20 +84,16 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="FE 배포 성공"
-            DESC="새로운 버전이 EC2 서버에 정상적으로 배포되었습니다."
+            TITLE="FE V2 배포 성공"
+            DESC="S3 + CloudFront에 정상 배포되었습니다."
             COLOR=3066993
           elif [ "${{ job.status }}" = "cancelled" ]; then
-            TITLE="FE 배포 취소"
+            TITLE="FE V2 배포 취소"
             DESC="배포가 취소되었습니다."
             COLOR=9807270
-          elif [ "${{ steps.rollback.outcome }}" = "success" ]; then
-            TITLE="FE 배포 실패 (롤백 완료)"
-            DESC="배포 실패로 이전 버전으로 롤백되었습니다."
-            COLOR=16753920
           else
-            TITLE="FE 배포 실패 (롤백 실패)"
-            DESC="롤백에 실패했습니다. 수동 확인이 필요합니다."
+            TITLE="FE V2 배포 실패"
+            DESC="배포에 실패했습니다. Actions 로그를 확인해주세요."
             COLOR=15158332
           fi
 
@@ -116,7 +119,7 @@ jobs:
                   {name: "상세", value: ("[Actions 로그](" + $url + ")"), inline: false}
                 ],
                 footer: {
-                  text: "FE CD",
+                  text: "FE V2 CD (S3 + CloudFront)",
                   icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
                 }
               }]
