@@ -68,10 +68,12 @@ jobs:
           echo "Invalidation ID: ${INVALIDATION_ID}"
 
       - name: Health check
+        env:
+          SITE_URL: ${{ github.event.workflow_run.head_branch == 'main' && 'https://moyeobab.com' || 'https://dev.moyeobab.com' }}
         run: |
           sleep 5
-          curl -sf --retry 5 --retry-delay 3 "https://dev.moyeobab.com" > /dev/null
-          echo "Health check passed"
+          curl -sf --retry 5 --retry-delay 3 "${SITE_URL}" > /dev/null
+          echo "Health check passed: ${SITE_URL}"
 
       - name: Notify Discord
         if: always()
@@ -83,16 +85,18 @@ jobs:
           RUN_NUM: ${{ github.event.workflow_run.run_number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          ENV_LABEL=${{ github.event.workflow_run.head_branch == 'main' && 'PROD' || 'DEV' }}
+
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="FE V2 배포 성공"
+            TITLE="FE V2 ${ENV_LABEL} 배포 성공"
             DESC="S3 + CloudFront에 정상 배포되었습니다."
             COLOR=3066993
           elif [ "${{ job.status }}" = "cancelled" ]; then
-            TITLE="FE V2 배포 취소"
+            TITLE="FE V2 ${ENV_LABEL} 배포 취소"
             DESC="배포가 취소되었습니다."
             COLOR=9807270
           else
-            TITLE="FE V2 배포 실패"
+            TITLE="FE V2 ${ENV_LABEL} 배포 실패"
             DESC="배포에 실패했습니다. Actions 로그를 확인해주세요."
             COLOR=15158332
           fi
