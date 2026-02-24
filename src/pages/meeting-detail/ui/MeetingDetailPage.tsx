@@ -22,6 +22,7 @@ type MeetingDetailResponse = {
   inviteCode: string
   hostMemberId: number
   participantCount: number
+  chatUnreadCount: number
   participants: MeetingParticipantSummary[]
   currentVoteId: number | null
   voteStatus: string | null
@@ -59,6 +60,10 @@ export function MeetingDetailPage() {
   const [confirmAction, setConfirmAction] = useState<'delete' | 'leave' | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [copyNotice, setCopyNotice] = useState<string | null>(null)
+
+  const chatUnreadCount = Math.max(0, data?.chatUnreadCount ?? 0)
+  const chatUnreadBadgeLabel =
+    chatUnreadCount > 99 ? '99+' : chatUnreadCount > 0 ? String(chatUnreadCount) : null
 
   useEffect(() => {
     if (!meetingId) return
@@ -227,15 +232,34 @@ export function MeetingDetailPage() {
 
       {!loading && !error && data && (
         <>
-          {canEditMeeting && (
+          <div className={styles.topActions}>
             <button
               type="button"
-              className={styles.editButton}
-              onClick={() => navigate(`/meetings/${data.meetingId}/edit`)}
+              className={styles.chatButton}
+              onClick={() => navigate(`/meetings/${data.meetingId}/chat`)}
+              aria-label={
+                chatUnreadCount > 0
+                  ? `단체 채팅방, 읽지 않은 메시지 ${chatUnreadCount}개`
+                  : '단체 채팅방'
+              }
             >
-              모임 수정
+              단체 채팅방
+              {chatUnreadBadgeLabel && (
+                <span className={styles.chatUnreadBadge} aria-hidden="true">
+                  {chatUnreadBadgeLabel}
+                </span>
+              )}
             </button>
-          )}
+            {canEditMeeting && (
+              <button
+                type="button"
+                className={styles.editButton}
+                onClick={() => navigate(`/meetings/${data.meetingId}/edit`)}
+              >
+                모임 수정
+              </button>
+            )}
+          </div>
 
           <section className={styles.detailCard}>
             <div className={styles.detailHeader}>
