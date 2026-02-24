@@ -14,6 +14,7 @@ import { EventPage } from '@/pages/event'
 import { RankingPage } from '@/pages/ranking'
 import { NotificationPage } from '@/pages/notification'
 import { MeetingDetailPage } from '@/pages/meeting-detail'
+import { MeetingChatPage } from '@/pages/meeting-chat'
 import { MeetingCreatedPage } from '@/pages/meeting-created'
 import { MeetingCreatePage } from '@/pages/meeting-create'
 import { MeetingJoinPage } from '@/pages/meeting-join'
@@ -139,6 +140,7 @@ export function AppRouter() {
       <Route path="/meetings/join" element={<MeetingJoinPage />} />
       <Route path="/meetings/:meetingId/edit" element={<MeetingEditPage />} />
       <Route path="/meetings/:meetingId" element={<MeetingDetailPage />} />
+      <Route path="/meetings/:meetingId/chat" element={<MeetingChatPage />} />
       <Route path="/meetings/:meetingId/created" element={<MeetingCreatedPage />} />
       <Route path="/meetings/:meetingId/final" element={<MeetingFinalPage />} />
       <Route path="/votes/new" element={<VoteCreatePage />} />
