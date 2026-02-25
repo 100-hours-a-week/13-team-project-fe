@@ -1,20 +1,29 @@
 name: FE V2 CI PIPELINE
 
 on:
+  pull_request:
+    branches: [develop, main]
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
+      - "docs/**"
+      - "**/*.md"
   push:
     branches: [main, develop]
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
-  group: fe-v2-ci-${{ github.workflow }}-${{ github.ref }}
+  group: fe-v2-ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   ci:
     runs-on: ubuntu-24.04-arm
-    environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
+    environment: ${{ github.event_name == 'push' && (github.ref_name == 'main' && 'production' || 'develop') || '' }}
 
     steps:
       - name: Checkout
@@ -32,19 +41,16 @@ jobs:
 
       - name: Security audit
         id: audit
-        continue-on-error: true # 경고만
-        run: |
-          npm audit --audit-level=high 2>&1 | tee audit-results.txt || true
+        continue-on-error: true
+        run: npm audit --audit-level=high 2>&1 | tee audit-results.txt || true
 
       - name: Lint
         id: lint
-        run: |
-          npm run lint --if-present 2>&1 | tee lint-results.txt
+        run: npm run lint --if-present 2>&1 | tee lint-results.txt
 
       - name: Unit tests
         id: test
-        run: |
-          npm test --if-present 2>&1 | tee test-results.txt
+        run: npm test --if-present 2>&1 | tee test-results.txt
 
       - name: Build
         id: build
@@ -52,7 +58,6 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_KAKAO_MAP_APP_KEY: ${{ secrets.VITE_KAKAO_MAP_APP_KEY }}
           VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
-
         run: npm run build --if-present
 
       # E2E 테스트 도입 시 활성화
@@ -65,19 +70,77 @@ jobs:
       # - name: Run E2E tests
       #   run: npm run test:e2e --if-present
 
+      # ── PR: 검증 결과 코멘트 ──
+      - name: Prepare PR comment
+        id: pr_comment
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          status_icon() {
+            case "$1" in
+              success) echo "✅" ;;
+              failure) echo "❌" ;;
+              cancelled) echo "⚪" ;;
+              skipped) echo "⏭️" ;;
+              *) echo "❓" ;;
+            esac
+          }
+
+          audit_outcome="${{ steps.audit.outcome }}"
+          lint_outcome="${{ steps.lint.outcome }}"
+          tests_outcome="${{ steps.test.outcome }}"
+          build_outcome="${{ steps.build.outcome }}"
+
+          audit_icon="$(status_icon "$audit_outcome")"
+          lint_icon="$(status_icon "$lint_outcome")"
+          tests_icon="$(status_icon "$tests_outcome")"
+          build_icon="$(status_icon "$build_outcome")"
+
+          overall="success"
+          for outcome in "$lint_outcome" "$tests_outcome" "$build_outcome"; do
+            if [ "$outcome" = "failure" ] || [ "$outcome" = "cancelled" ]; then
+              overall="failure"
+              break
+            fi
+          done
+
+          if [ "$overall" = "success" ]; then
+            header="✅ **CI 검증 완료!**"
+          else
+            header="❌ **CI 검증 실패**"
+          fi
+
+          {
+            echo "message<<EOF"
+            echo "$header"
+            echo "- Audit: $audit_icon"
+            echo "- Lint: $lint_icon"
+            echo "- Unit tests: $tests_icon"
+            echo "- Build: $build_icon"
+            echo "- 실행 결과: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Comment CI status
+        if: always() && github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: ${{ steps.pr_comment.outputs.message }}
+          comment_tag: ci_status
+
+      # ── Push: 아티팩트 업로드 + Discord 알림 ──
       - name: Upload CI results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name == 'push'
         with:
           name: fe-ci-results-${{ github.run_number }}
           path: |
-            audit-results.json
+            audit-results.txt
             lint-results.txt
             test-results.txt
           retention-days: 30
 
       - name: Upload build artifact
-        if: success()
+        if: success() && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ github.sha }}
@@ -86,9 +149,9 @@ jobs:
           retention-days: 30
 
       - name: Notify Discord
-        if: always()
+        if: always() && github.event_name == 'push'
         env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_CI }}
           BRANCH: ${{ github.ref_name }}
           RUN_NUM: ${{ github.run_number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
