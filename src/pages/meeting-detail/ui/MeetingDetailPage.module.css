@@ -43,7 +43,6 @@
 }
 
 .editButton {
-  align-self: flex-end;
   border: 1px solid rgba(15, 23, 42, 0.15);
   background: var(--surface);
   color: var(--ink);
@@ -51,6 +50,45 @@
   border-radius: 999px;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.topActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chatButton {
+  position: relative;
+  border: 1px solid rgba(250, 205, 21, 0.65);
+  background: linear-gradient(180deg, #ffe96a 0%, #ffd634 100%);
+  color: #2b2b2b;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(255, 214, 52, 0.24);
+}
+
+.chatUnreadBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e11d48;
+  color: #fff;
+  border: 2px solid var(--bg);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 8px 16px rgba(225, 29, 72, 0.28);
 }
 
 .detailCard {
