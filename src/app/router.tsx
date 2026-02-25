@@ -24,6 +24,14 @@ import { VoteCreatePage } from '@/pages/vote-create'
 import { VotePage } from '@/pages/vote'
 import { VoteTop3Page } from '@/pages/vote-top3'
 import { VoteWaitPage } from '@/pages/vote-wait'
+import { SettlementReceiptUploadPage } from '@/pages/settlement-receipt-upload'
+import { SettlementOcrLoadingPage } from '@/pages/settlement-ocr-loading'
+import { SettlementOcrFailedPage } from '@/pages/settlement-ocr-failed'
+import { SettlementOcrEditPage } from '@/pages/settlement-ocr-edit'
+import { SettlementMenuSelectionPage } from '@/pages/settlement-menu-selection'
+import { SettlementWaitingPage } from '@/pages/settlement-waiting'
+import { SettlementResultPage } from '@/pages/settlement-result'
+import { SettlementCompletedPage } from '@/pages/settlement-completed'
 
 const statusRoute: Record<MemberStatus, string> = {
   PENDING: '/terms',
@@ -147,6 +155,32 @@ export function AppRouter() {
       <Route path="/meetings/:meetingId/votes/:voteId" element={<VotePage />} />
       <Route path="/meetings/:meetingId/votes/:voteId/wait" element={<VoteWaitPage />} />
       <Route path="/meetings/:meetingId/votes/:voteId/top3" element={<VoteTop3Page />} />
+      <Route
+        path="/meetings/:meetingId/settlement/receipt"
+        element={<SettlementReceiptUploadPage />}
+      />
+      <Route
+        path="/meetings/:meetingId/settlement/ocr/loading"
+        element={<SettlementOcrLoadingPage />}
+      />
+      <Route
+        path="/meetings/:meetingId/settlement/ocr/failed"
+        element={<SettlementOcrFailedPage />}
+      />
+      <Route
+        path="/meetings/:meetingId/settlement/ocr/edit"
+        element={<SettlementOcrEditPage />}
+      />
+      <Route
+        path="/meetings/:meetingId/settlement/selection"
+        element={<SettlementMenuSelectionPage />}
+      />
+      <Route path="/meetings/:meetingId/settlement/wait" element={<SettlementWaitingPage />} />
+      <Route path="/meetings/:meetingId/settlement/result" element={<SettlementResultPage />} />
+      <Route
+        path="/meetings/:meetingId/settlement/completed"
+        element={<SettlementCompletedPage />}
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

@@ -1,0 +1,39 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.description {
+  margin: 0;
+  color: var(--muted);
+}
+
+.note {
+  margin-top: 12px;
+  color: #d7263d;
+}
+
+.linkButton {
+  width: 100%;
+  margin-top: 18px;
+  border: none;
+  border-radius: 12px;
+  background: #f6f7fb;
+  color: var(--muted);
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
