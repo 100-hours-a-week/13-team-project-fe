@@ -691,7 +691,7 @@ export function MeetingChatPage() {
                       {!isMine && <span className={styles.senderName}>{message.sender?.name}</span>}
                       <div className={styles.bubbleRow}>
                         {isMine && <span className={styles.timeText}>{formatClock(message.created_at)}</span>}
-                        {(message.unread_count ?? 0) > 0 && (
+                        {isMine && (message.unread_count ?? 0) > 0 && (
                           <span className={styles.unreadText}>{message.unread_count}</span>
                         )}
                         <div className={`${styles.bubble} ${isMine ? styles.mineBubble : styles.theirBubble}`}>
@@ -707,6 +707,9 @@ export function MeetingChatPage() {
                             <span className={styles.messageText}>{message.content}</span>
                           )}
                         </div>
+                        {!isMine && (message.unread_count ?? 0) > 0 && (
+                          <span className={styles.unreadText}>{message.unread_count}</span>
+                        )}
                         {!isMine && <span className={styles.timeText}>{formatClock(message.created_at)}</span>}
                       </div>
                     </div>
