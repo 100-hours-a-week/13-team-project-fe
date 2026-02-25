@@ -1,0 +1,71 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.note {
+  margin: 0 0 12px;
+  color: #d7263d;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.item,
+.itemSelected {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.itemSelected {
+  border-color: var(--accent);
+  background: #eef2ff;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.primaryButton {
+  width: 100%;
+  margin-top: 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
