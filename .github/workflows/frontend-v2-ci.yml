@@ -2,7 +2,7 @@ name: FE V2 CI PIPELINE
 
 on:
   push:
-    branches: [main, evelop]
+    branches: [main, develop]
 
 permissions:
   contents: read
