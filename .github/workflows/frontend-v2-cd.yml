@@ -66,12 +66,16 @@ jobs:
             --paths "/*" \
             --query "Invalidation.Id" --output text)
           echo "Invalidation ID: ${INVALIDATION_ID}"
+          echo "Waiting for invalidation to complete..."
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "${CF_DISTRIBUTION_ID}" \
+            --id "${INVALIDATION_ID}"
+          echo "Invalidation completed"
 
       - name: Health check
         env:
           SITE_URL: ${{ github.event.workflow_run.head_branch == 'main' && 'https://moyeobab.com' || 'https://dev.moyeobab.com' }}
         run: |
-          sleep 5
           curl -sf --retry 5 --retry-delay 3 "${SITE_URL}" > /dev/null
           echo "Health check passed: ${SITE_URL}"
 
