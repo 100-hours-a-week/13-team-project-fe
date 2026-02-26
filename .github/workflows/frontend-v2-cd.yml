@@ -66,38 +66,43 @@ jobs:
             --paths "/*" \
             --query "Invalidation.Id" --output text)
           echo "Invalidation ID: ${INVALIDATION_ID}"
+          echo "Waiting for invalidation to complete..."
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "${CF_DISTRIBUTION_ID}" \
+            --id "${INVALIDATION_ID}"
+          echo "Invalidation completed"
 
       - name: Health check
         env:
           SITE_URL: ${{ github.event.workflow_run.head_branch == 'main' && 'https://moyeobab.com' || 'https://dev.moyeobab.com' }}
         run: |
-          sleep 5
           curl -sf --retry 5 --retry-delay 3 "${SITE_URL}" > /dev/null
           echo "Health check passed: ${SITE_URL}"
 
       - name: Notify Discord
         if: always()
         env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_CD }}
           BRANCH: ${{ github.event.workflow_run.head_branch }}
           COMMIT_MSG: ${{ github.event.workflow_run.head_commit.message }}
           AUTHOR: ${{ github.event.workflow_run.head_commit.author.name }}
-          RUN_NUM: ${{ github.event.workflow_run.run_number }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          ENV_LABEL=${{ github.event.workflow_run.head_branch == 'main' && 'PROD' || 'DEV' }}
+          ENV_UPPER=${{ github.event.workflow_run.head_branch == 'main' && 'PROD' || 'DEV' }}
+          SHORT_SHA=$(echo "$COMMIT_SHA" | cut -c1-7)
 
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="FE V2 ${ENV_LABEL} 배포 성공"
-            DESC="S3 + CloudFront에 정상 배포되었습니다."
+            TITLE="[${ENV_UPPER}] Frontend 배포 성공"
+            DESC="S3 + CloudFront에 \`${SHORT_SHA}\` 배포 완료"
             COLOR=3066993
           elif [ "${{ job.status }}" = "cancelled" ]; then
-            TITLE="FE V2 ${ENV_LABEL} 배포 취소"
-            DESC="배포가 취소되었습니다."
+            TITLE="[${ENV_UPPER}] Frontend 배포 취소"
+            DESC="배포가 취소되었습니다"
             COLOR=9807270
           else
-            TITLE="FE V2 ${ENV_LABEL} 배포 실패"
-            DESC="배포에 실패했습니다. Actions 로그를 확인해주세요."
+            TITLE="[${ENV_UPPER}] Frontend 배포 실패"
+            DESC="배포 실패 — Actions 로그를 확인하세요"
             COLOR=15158332
           fi
 
@@ -105,10 +110,11 @@ jobs:
             --arg title "$TITLE" \
             --arg desc "$DESC" \
             --arg color "$COLOR" \
+            --arg env_label "$ENV_UPPER" \
             --arg branch "$BRANCH" \
-            --arg run_num "$RUN_NUM" \
             --arg author "$AUTHOR" \
             --arg msg "$COMMIT_MSG" \
+            --arg tag "sha-${SHORT_SHA}" \
             --arg url "$RUN_URL" \
             '{
               embeds: [{
@@ -116,15 +122,15 @@ jobs:
                 description: $desc,
                 color: ($color | tonumber),
                 fields: [
+                  {name: "환경", value: $env_label, inline: true},
                   {name: "브랜치", value: $branch, inline: true},
-                  {name: "빌드 번호", value: ("#" + $run_num), inline: true},
                   {name: "작성자", value: $author, inline: true},
-                  {name: "커밋 메시지", value: $msg, inline: false},
+                  {name: "버전", value: ("`" + $tag + "`"), inline: true},
+                  {name: "커밋", value: $msg, inline: false},
                   {name: "상세", value: ("[Actions 로그](" + $url + ")"), inline: false}
                 ],
                 footer: {
-                  text: "FE V2 CD (S3 + CloudFront)",
-                  icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                  text: "Frontend CD"
                 }
               }]
             }' | curl -sf -X POST "$WEBHOOK" -H "Content-Type: application/json" -d @-

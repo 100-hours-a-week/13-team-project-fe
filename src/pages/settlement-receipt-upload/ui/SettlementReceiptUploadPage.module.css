@@ -1,0 +1,89 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.note {
+  margin: 0 0 12px;
+  color: #d7263d;
+}
+
+.card {
+  width: 100%;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.previewImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.placeholder {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.actions {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.primaryButton,
+.secondaryButton,
+.linkButton {
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #eef2ff;
+  color: #3245b1;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.linkButton {
+  width: 100%;
+  margin-top: 12px;
+  background: #f6f7fb;
+  color: var(--muted);
+}
+
+.fileInput {
+  display: none;
+}

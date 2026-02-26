@@ -4,6 +4,7 @@ import styles from './MeetingDetailPage.module.css'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import { request } from '@/shared/lib/api'
+import { routeBySettlementState } from '@/shared/lib/settlement'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 
 type MeetingDetailResponse = {
@@ -70,6 +71,7 @@ export function MeetingDetailPage() {
   const [modalMessage, setModalMessage] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<'delete' | 'leave' | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isRoutingSettlement, setIsRoutingSettlement] = useState(false)
   const [copyNotice, setCopyNotice] = useState<string | null>(null)
   const pollTimerRef = useRef<number | null>(null)
   const isFetchingStateRef = useRef(false)
@@ -371,6 +373,20 @@ export function MeetingDetailPage() {
     }
   }
 
+  const handleMoveSettlement = async () => {
+    if (!data || isRoutingSettlement) return
+    try {
+      setIsRoutingSettlement(true)
+      await routeBySettlementState(data.meetingId, {
+        onKeepMeetingDetail: () => setModalMessage('정산이 아직 시작되지 않았어요.'),
+      })
+    } catch (err) {
+      setModalMessage(err instanceof Error ? err.message : '정산 상태를 확인하지 못했습니다.')
+    } finally {
+      setIsRoutingSettlement(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -474,6 +490,14 @@ export function MeetingDetailPage() {
               disabled={primaryAction.disabled}
             >
               {primaryAction.label}
+            </button>
+            <button
+              type="button"
+              className={styles.primaryAction}
+              onClick={() => void handleMoveSettlement()}
+              disabled={isRoutingSettlement}
+            >
+              {isRoutingSettlement ? '확인 중...' : '정산하기'}
             </button>
             <button
               type="button"
