@@ -1,0 +1,91 @@
+.page {
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  background: var(--bg);
+  color: var(--text);
+  display: grid;
+  gap: 12px;
+}
+
+.header {
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.category {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.name {
+  margin: 0;
+  font-size: 18px;
+}
+
+.meta,
+.address {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #f6f7fb;
+  color: var(--muted);
+}

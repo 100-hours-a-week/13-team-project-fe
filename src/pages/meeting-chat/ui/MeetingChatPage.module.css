@@ -408,6 +408,55 @@
   z-index: 2;
 }
 
+.fileInput {
+  display: none;
+}
+
+.attachButton {
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1f2937;
+  box-shadow:
+    0 6px 18px rgba(51, 65, 85, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  display: grid;
+  place-items: center;
+}
+
+.attachButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.attachSpinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.4);
+  border-top-color: #111827;
+  animation: attachSpin 0.8s linear infinite;
+}
+
+@keyframes attachSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.attachButton:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
 .textarea {
   flex: 1;
   min-height: 42px;
@@ -470,6 +519,11 @@
     gap: 8px;
     padding: 10px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .attachButton {
+    width: 40px;
+    height: 40px;
   }
 
   .sendButton {

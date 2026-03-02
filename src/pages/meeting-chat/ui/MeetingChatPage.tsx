@@ -2,7 +2,7 @@ import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
 import { useAuth } from '@/app/providers/auth-context'
 import { request } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './MeetingChatPage.module.css'
 
@@ -32,6 +32,15 @@ type ChatMessagePage = {
 type ChatMessagesLoadedData = {
   items: ChatMessageItem[]
   page: ChatMessagePage
+}
+
+type ChatImagePresignData = {
+  upload_method: 'PUT'
+  upload_url: string
+  file_key: string
+  public_url: string
+  expires_in_seconds: number
+  required_headers: Record<string, string>
 }
 
 type ChatTopicMessageCreatedEvent = {
@@ -99,6 +108,10 @@ type MeetingDetailSummary = {
 type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error'
 
 const MESSAGE_PAGE_SIZE = 50
+const CHAT_IMAGE_MAX_FILE_SIZE_BYTES = (() => {
+  const parsed = Number(import.meta.env.VITE_CHAT_IMAGE_MAX_FILE_SIZE_BYTES ?? 10_485_760)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 10_485_760
+})()
 
 function toWsUrl() {
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
@@ -179,6 +192,7 @@ export function MeetingChatPage() {
   const [loading, setLoading] = useState(true)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [sending, setSending] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [composer, setComposer] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
@@ -186,6 +200,7 @@ export function MeetingChatPage() {
   const [ephemeralNotice, setEphemeralNotice] = useState<string | null>(null)
 
   const listRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const stompClientRef = useRef<Client | null>(null)
   const subscriptionsRef = useRef<StompSubscription[]>([])
   const messageIdSetRef = useRef<Set<number>>(new Set())
@@ -510,7 +525,31 @@ export function MeetingChatPage() {
     return () => window.clearTimeout(timer)
   }, [ephemeralNotice])
 
-    const handleLoadOlder = async () => {
+  const publishMessage = useCallback(
+    (payload: { type: 'TEXT' | 'IMAGE'; content: string }) => {
+      if (!parsedMeetingId) return false
+      const client = stompClientRef.current
+      if (!client || !client.connected) {
+        setEphemeralNotice('실시간 연결이 준비되지 않았습니다.')
+        return false
+      }
+
+      stickyBottomRef.current = true
+      requestAnimationFrame(() => scrollToBottom('smooth'))
+      client.publish({
+        destination: `/api/v2/app/meetings/${parsedMeetingId}/messages`,
+        body: JSON.stringify({
+          client_message_id: buildUuid(),
+          type: payload.type,
+          content: payload.content,
+        }),
+      })
+      return true
+    },
+    [parsedMeetingId, scrollToBottom],
+  )
+
+  const handleLoadOlder = async () => {
     if (!nextCursor || loadingOlder) return
     await loadMessagePage(nextCursor, 'older')
   }
@@ -531,29 +570,14 @@ export function MeetingChatPage() {
       return
     }
 
-    const client = stompClientRef.current
-    if (!client || !client.connected) {
-      setEphemeralNotice('실시간 연결이 준비되지 않았습니다.')
-      return
-    }
-
-    const payload = {
-      client_message_id: buildUuid(),
-      type: 'TEXT' as const,
-      content: text,
-    }
-
     try {
       sendGuardRef.current = true
       setSending(true)
       lastSentRef.current = { text, at: now }
-      stickyBottomRef.current = true
-      requestAnimationFrame(() => scrollToBottom('smooth'))
-      client.publish({
-        destination: `/api/v2/app/meetings/${parsedMeetingId}/messages`,
-        body: JSON.stringify(payload),
-      })
-      setComposer('')
+      const sent = publishMessage({ type: 'TEXT', content: text })
+      if (sent) {
+        setComposer('')
+      }
     } catch {
       setEphemeralNotice('메시지 전송에 실패했습니다.')
     } finally {
@@ -561,6 +585,64 @@ export function MeetingChatPage() {
       window.setTimeout(() => {
         sendGuardRef.current = false
       }, 120)
+    }
+  }
+
+  const handleSelectImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !parsedMeetingId) return
+
+    if (!file.type.toLowerCase().startsWith('image/')) {
+      setEphemeralNotice('이미지 파일만 전송할 수 있습니다.')
+      return
+    }
+
+    if (file.size <= 0 || file.size > CHAT_IMAGE_MAX_FILE_SIZE_BYTES) {
+      setEphemeralNotice('이미지 용량 제한을 확인해 주세요.')
+      return
+    }
+
+    if (!stompClientRef.current?.connected) {
+      setEphemeralNotice('실시간 연결이 준비되지 않았습니다.')
+      return
+    }
+
+    try {
+      setUploadingImage(true)
+      const presign = await request<ChatImagePresignData>(
+        `/api/v2/meetings/${parsedMeetingId}/images/presign`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            content_type: file.type,
+            file_name: file.name,
+            file_size: file.size,
+          }),
+        },
+      )
+
+      const headers = new Headers(presign.required_headers ?? {})
+      if (!headers.has('Content-Type')) {
+        headers.set('Content-Type', file.type)
+      }
+
+      const uploadResponse = await fetch(presign.upload_url, {
+        method: presign.upload_method ?? 'PUT',
+        headers,
+        body: file,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error(`s3_upload_failed_${uploadResponse.status}`)
+      }
+
+      const sent = publishMessage({ type: 'IMAGE', content: presign.public_url })
+      if (!sent) return
+    } catch {
+      setEphemeralNotice('이미지 업로드에 실패했습니다.')
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -721,6 +803,29 @@ export function MeetingChatPage() {
         </div>
 
         <div className={styles.composerPanel}>
+          <input
+            ref={fileInputRef}
+            className={styles.fileInput}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+            onChange={(event) => void handleSelectImage(event)}
+          />
+          <button
+            type="button"
+            className={styles.attachButton}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || uploadingImage}
+            aria-label="채팅 이미지 첨부"
+            aria-busy={uploadingImage}
+          >
+            {uploadingImage ? (
+              <span className={styles.attachSpinner} aria-hidden />
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            )}
+          </button>
           <textarea
             className={styles.textarea}
             placeholder="메시지를 입력하세요"
@@ -747,7 +852,7 @@ export function MeetingChatPage() {
             type="button"
             className={styles.sendButton}
             onClick={() => void handleSendMessage()}
-            disabled={sending || composer.trim().length === 0}
+            disabled={sending || uploadingImage || composer.trim().length === 0}
           >
             전송
           </button>

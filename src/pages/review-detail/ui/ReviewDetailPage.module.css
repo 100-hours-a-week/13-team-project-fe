@@ -1,0 +1,198 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.cardWrap {
+  display: grid;
+  gap: 10px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.restaurantCard {
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.restaurantImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.restaurantInfo {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.restaurantInfo strong {
+  font-size: 16px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.categoryBadge {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ratingField {
+  margin-top: 8px;
+}
+
+.starRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.star,
+.starActive {
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  padding: 2px;
+  cursor: pointer;
+  color: #c7ced8;
+}
+
+.starActive {
+  color: #ffb400;
+}
+
+.scoreText {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+  font-size: 13px;
+}
+
+.floatingActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.primaryButton,
+.secondaryButton,
+.deleteButton {
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #f6f7fb;
+  color: var(--muted);
+}
+
+.deleteButton {
+  background: rgba(215, 38, 61, 0.12);
+  color: var(--danger);
+}
+
+.smallPrimaryButton,
+.smallDeleteButton {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.smallPrimaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.smallDeleteButton {
+  background: rgba(215, 38, 61, 0.12);
+  color: var(--danger);
+}
+
+@media (max-width: 420px) {
+  .floatingActions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

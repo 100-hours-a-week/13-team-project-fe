@@ -32,6 +32,12 @@ import { SettlementMenuSelectionPage } from '@/pages/settlement-menu-selection'
 import { SettlementWaitingPage } from '@/pages/settlement-waiting'
 import { SettlementResultPage } from '@/pages/settlement-result'
 import { SettlementCompletedPage } from '@/pages/settlement-completed'
+import { ReviewCreatePage } from '@/pages/review-create'
+import { ReviewDetailPage } from '@/pages/review-detail'
+import { QuickEnterPage } from '@/pages/quick-enter'
+import { QuickRoomPage } from '@/pages/quick-room'
+import { QuickVotePage } from '@/pages/quick-vote'
+import { QuickResultPage } from '@/pages/quick-result'
 
 const statusRoute: Record<MemberStatus, string> = {
   PENDING: '/terms',
@@ -41,6 +47,14 @@ const statusRoute: Record<MemberStatus, string> = {
 }
 
 const publicPaths = new Set(['/', '/terms', '/preferences', '/meetings/join'])
+const publicPathPrefixes = ['/quick']
+
+function isPublicPath(pathname: string) {
+  if (publicPaths.has(pathname)) return true
+  return publicPathPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+}
 
 function LoadingScreen() {
   return (
@@ -84,7 +98,7 @@ export function AppRouter() {
     if (loading) return
 
     if (!member) {
-      if (!publicPaths.has(pathname)) {
+      if (!isPublicPath(pathname)) {
         return
       }
       return
@@ -116,7 +130,7 @@ export function AppRouter() {
 
   if (loading) return <LoadingScreen />
 
-  if (!member && !publicPaths.has(pathname)) {
+  if (!member && !isPublicPath(pathname)) {
     return <Navigate to="/" replace />
   }
 
@@ -139,6 +153,10 @@ export function AppRouter() {
       <Route path="/preferences" element={<PreferencesPage />} />
       <Route path="/main" element={<MainPage />} />
       <Route path="/main-temp" element={<MainTempPage />} />
+      <Route path="/quick" element={<QuickEnterPage />} />
+      <Route path="/quick/:inviteCode" element={<QuickRoomPage />} />
+      <Route path="/quick/:inviteCode/vote" element={<QuickVotePage />} />
+      <Route path="/quick/:inviteCode/result" element={<QuickResultPage />} />
       <Route path="/event" element={<EventPage />} />
       <Route path="/ranking" element={<RankingPage />} />
       <Route path="/notification" element={<NotificationPage />} />
@@ -151,7 +169,9 @@ export function AppRouter() {
       <Route path="/meetings/:meetingId/chat" element={<MeetingChatPage />} />
       <Route path="/meetings/:meetingId/created" element={<MeetingCreatedPage />} />
       <Route path="/meetings/:meetingId/final" element={<MeetingFinalPage />} />
+      <Route path="/meetings/:meetingId/reviews" element={<ReviewCreatePage />} />
       <Route path="/votes/new" element={<VoteCreatePage />} />
+      <Route path="/reviews/:reviewId" element={<ReviewDetailPage />} />
       <Route path="/meetings/:meetingId/votes/:voteId" element={<VotePage />} />
       <Route path="/meetings/:meetingId/votes/:voteId/wait" element={<VoteWaitPage />} />
       <Route path="/meetings/:meetingId/votes/:voteId/top3" element={<VoteTop3Page />} />

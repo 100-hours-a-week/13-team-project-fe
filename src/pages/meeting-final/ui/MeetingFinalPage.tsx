@@ -132,6 +132,13 @@ export function MeetingFinalPage() {
       <button type="button" className={styles.primaryButton} onClick={() => navigate(backPath)}>
         모임 상세로 돌아가기
       </button>
+      <button
+        type="button"
+        className={styles.secondaryButton}
+        onClick={() => navigate(`/meetings/${parsedMeetingId}/reviews`)}
+      >
+        리뷰 작성하기
+      </button>
     </div>
   )
 }

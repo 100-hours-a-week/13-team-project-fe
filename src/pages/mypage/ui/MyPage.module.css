@@ -190,10 +190,17 @@
   gap: 12px;
 }
 
+.listItemButton {
+  border: none;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
 .listItem {
-  border: 1px solid var(--stroke);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: grid;
   gap: 8px;
   background: var(--surface);
@@ -212,14 +219,13 @@
 
 .listHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
 }
 
-.rating {
-  color: var(--brand);
-  font-size: 13px;
+.ratingStars {
+  color: #ffb400;
+  font-size: 16px;
+  letter-spacing: 1px;
 }
 
 .badge {

@@ -25,6 +25,12 @@ const statusLabel: Record<PaymentStatus, string> = {
   DONE: '완료',
 }
 
+function getStatusButtonClass(status: PaymentStatus) {
+  if (status === 'DONE') return styles.statusButtonDone
+  if (status === 'REQUESTED') return styles.statusButtonRequested
+  return styles.statusButtonUnpaid
+}
+
 export function SettlementResultPage() {
   const { meetingId } = useParams()
   const { member } = useAuth()
@@ -34,6 +40,7 @@ export function SettlementResultPage() {
   const [loading, setLoading] = useState(true)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<SettlementResultParticipant | null>(null)
 
   const myMemberId = member?.memberId ?? null
   const isHost = hostMemberId !== null && myMemberId !== null && hostMemberId === myMemberId
@@ -114,20 +121,6 @@ export function SettlementResultPage() {
     }
   }
 
-  const handleConfirmParticipant = async (participantId: number) => {
-    if (!Number.isFinite(parsedMeetingId) || busyAction) return
-    try {
-      setBusyAction(`confirm-${participantId}`)
-      await confirmSettlementPayment(parsedMeetingId, participantId)
-      await fetchResult()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '송금 완료 처리에 실패했어요.')
-      void routeBySettlementState(parsedMeetingId, { replace: true })
-    } finally {
-      setBusyAction(null)
-    }
-  }
-
   const handleRemind = async () => {
     if (!Number.isFinite(parsedMeetingId) || busyAction) return
     try {
@@ -154,6 +147,26 @@ export function SettlementResultPage() {
     }
   }
 
+  const handleConfirmParticipant = async (participantId: number) => {
+    if (!Number.isFinite(parsedMeetingId) || busyAction) return
+    try {
+      setBusyAction(`confirm-${participantId}`)
+      await confirmSettlementPayment(parsedMeetingId, participantId)
+      await fetchResult()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '송금 완료 처리에 실패했어요.')
+      void routeBySettlementState(parsedMeetingId, { replace: true })
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const handleOpenConfirm = (participant: SettlementResultParticipant) => {
+    if (participant.paymentStatus === 'DONE') return
+    if (busyAction !== null) return
+    setConfirmTarget(participant)
+  }
+
   return (
     <div className={styles.page} data-page-id="settlement-result">
       <header className={styles.header}>
@@ -167,7 +180,7 @@ export function SettlementResultPage() {
         <>
           <section className={styles.list}>
             {participants.map((item) => (
-              <article key={item.participantId} className={styles.item}>
+              <article key={item.meetingParticipantId} className={styles.item}>
                 <div className={styles.profile}>
                   <div className={styles.avatar}>
                     {item.profileImageUrl ? (
@@ -178,22 +191,21 @@ export function SettlementResultPage() {
                   </div>
                   <div>
                     <strong>{item.nickname}</strong>
-                    <p>{item.amount.toLocaleString('ko-KR')}원</p>
+                    <p>{(item.amountDue ?? 0).toLocaleString('ko-KR')}원</p>
                   </div>
                 </div>
-                <div className={styles.statusArea}>
-                  <span className={styles.status}>{statusLabel[item.paymentStatus]}</span>
-                  {isHost && item.paymentStatus !== 'DONE' && (
+                {isHost && item.memberId !== hostMemberId && (
+                  <div className={styles.statusArea}>
                     <button
                       type="button"
-                      className={styles.inlineButton}
-                      onClick={() => handleConfirmParticipant(item.participantId)}
-                      disabled={busyAction !== null}
+                      className={getStatusButtonClass(item.paymentStatus)}
+                      disabled={busyAction !== null || item.paymentStatus === 'DONE'}
+                      onClick={() => handleOpenConfirm(item)}
                     >
-                      완료 처리
+                      {statusLabel[item.paymentStatus]}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </article>
             ))}
           </section>
@@ -228,6 +240,38 @@ export function SettlementResultPage() {
             </button>
           )}
         </>
+      )}
+
+      {confirmTarget && (
+        <div className={styles.modalBackdrop} role="presentation" onClick={() => setConfirmTarget(null)}>
+          <div
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className={styles.modalText}>송금 완료 처리하시겠습니까?</p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.modalCancel}
+                onClick={() => setConfirmTarget(null)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.modalConfirm}
+                onClick={() => {
+                  void handleConfirmParticipant(confirmTarget.meetingParticipantId)
+                  setConfirmTarget(null)
+                }}
+              >
+                예
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
