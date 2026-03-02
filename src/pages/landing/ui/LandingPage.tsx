@@ -1,5 +1,6 @@
 import styles from './LandingPage.module.css'
 import { startKakaoLogin } from '@/shared/lib/api'
+import { navigate } from '@/shared/lib/navigation'
 import kakaoLogin from '@/assets/kakao_login_large_wide.png'
 import servicePreview from '@/assets/servicePreview.png'
 
@@ -104,6 +105,13 @@ export function LandingPage() {
       <div className={styles.floatingCta}>
         <button className={styles.kakaoCta} onClick={startKakaoLogin} type="button">
           <img className={styles.kakaoCtaImage} src={kakaoLogin} alt="카카오로 3초 만에 시작하기" />
+        </button>
+        <button
+          type="button"
+          className={styles.quickButton}
+          onClick={() => navigate('/quick')}
+        >
+          퀵 모임 참여하기
         </button>
       </div>
     </div>

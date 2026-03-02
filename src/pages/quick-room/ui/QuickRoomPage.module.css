@@ -1,0 +1,71 @@
+.page {
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.header {
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  gap: 4px;
+}
+
+.row span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.row strong {
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.actions {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #f6f7fb;
+  color: var(--muted);
+}

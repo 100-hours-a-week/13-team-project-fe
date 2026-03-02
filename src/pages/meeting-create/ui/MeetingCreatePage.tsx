@@ -695,7 +695,7 @@ export function MeetingCreatePage() {
       exceptMeat: false,
       exceptBar: false,
       swipeCount: Number(form.swipeCount),
-      quickMeeting: false,
+      quickMeeting: form.quickMeeting,
     }
 
     try {
@@ -916,6 +916,27 @@ export function MeetingCreatePage() {
               <span className={styles.error}>{errors.swipeCount}</span>
             )}
           </label>
+
+          <div className={styles.field}>
+            <span className={styles.label}>모임 유형</span>
+            <div className={styles.meetingTypeRow}>
+              <button
+                type="button"
+                className={form.quickMeeting ? styles.typeButton : styles.typeButtonActive}
+                onClick={() => updateField('quickMeeting', false)}
+              >
+                일반 모임
+              </button>
+              <button
+                type="button"
+                className={form.quickMeeting ? styles.typeButtonActive : styles.typeButton}
+                onClick={() => updateField('quickMeeting', true)}
+              >
+                퀵 모임
+              </button>
+            </div>
+            <p className={styles.typeHint}>퀵 모임은 생성 직후 투표가 바로 시작됩니다.</p>
+          </div>
 
           <div className={styles.actions}>
             <button

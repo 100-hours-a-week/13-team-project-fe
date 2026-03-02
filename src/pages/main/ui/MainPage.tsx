@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import styles from './MainPage.module.css'
 import { getMyMeetings, participateMeeting } from '@/entities/meeting'
-import { logout } from '@/shared/lib/api'
+import { logout, request } from '@/shared/lib/api'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import logoImage from '@/assets/logo.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
+type MeetingForQuickRouteResponse = {
+  inviteCode: string
+}
 
 function formatDateTime(value: string) {
   if (!value) return ''
@@ -132,6 +135,28 @@ export function MainPage() {
     return '투표 준비중'
   }
 
+  const handleMeetingClick = async (meeting: (typeof meetings)[number]) => {
+    if (!meeting.quickMeeting) {
+      navigate(`/meetings/${meeting.meetingId}`)
+      return
+    }
+
+    try {
+      const detail = await request<MeetingForQuickRouteResponse>(
+        `/api/v1/meetings/${meeting.meetingId}`,
+      )
+      if (!detail.inviteCode) {
+        setMeetingsError('퀵 모임 초대코드를 확인할 수 없어요.')
+        return
+      }
+      navigate(`/quick/${detail.inviteCode}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '퀵 모임으로 이동하지 못했어요.'
+      setMeetingsError(message)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.content}>
@@ -181,6 +206,7 @@ export function MainPage() {
                 </span>
               </div>
             </button>
+
           </section>
 
           <section className={styles.listSection}>
@@ -205,13 +231,20 @@ export function MainPage() {
                     type="button"
                     key={meeting.meetingId}
                     className={styles.meetingCard}
-                    onClick={() => navigate(`/meetings/${meeting.meetingId}`)}
+                    onClick={() => {
+                      void handleMeetingClick(meeting)
+                    }}
                   >
                     <div className={styles.meetingHeader}>
                       <span className={styles.meetingTitle}>{meeting.title}</span>
-                      {meeting.finalSelected ? (
-                        <span className={styles.badge}>최종 확정</span>
-                      ) : null}
+                      <div className={styles.badges}>
+                        {meeting.quickMeeting ? (
+                          <span className={styles.quickBadge}>퀵 모임</span>
+                        ) : null}
+                        {meeting.finalSelected ? (
+                          <span className={styles.badge}>최종 확정</span>
+                        ) : null}
+                      </div>
                     </div>
                     <div className={styles.meetingMeta}>
                       <div className={styles.metaRow}>

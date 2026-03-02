@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './MyPage.module.css'
 import {
   ApiError,
@@ -9,11 +9,11 @@ import {
   withdrawMember,
   type PreferenceChoice,
 } from '@/shared/lib/api'
+import { getMyReviews, type ReviewItem } from '@/entities/review'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import kakaoLoginButton from '@/assets/kakao_login_medium_narrow.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
-
 
 function toggleItem(list: string[], code: string) {
   if (list.includes(code)) {
@@ -22,7 +22,7 @@ function toggleItem(list: string[], code: string) {
   return [...list, code]
 }
 
-type TabKey = 'profile' | 'reviews' | 'coupons'
+type TabKey = 'profile' | 'reviews'
 
 type PrefState = {
   allergy: string[]
@@ -32,7 +32,11 @@ type PrefState = {
 
 export function MyPage() {
   const { member, setMember, refresh } = useAuth()
-  const [tab, setTab] = useState<TabKey>('profile')
+  const memberId = member?.memberId ?? null
+  const [tab, setTab] = useState<TabKey>(() => {
+    const query = new URLSearchParams(window.location.search)
+    return query.get('tab') === 'reviews' ? 'reviews' : 'profile'
+  })
   const [allergyGroups, setAllergyGroups] = useState<PreferenceChoice[]>([])
   const [categories, setCategories] = useState<PreferenceChoice[]>([])
   const [pref, setPref] = useState<PrefState>({
@@ -44,6 +48,13 @@ export function MyPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [reviews, setReviews] = useState<ReviewItem[]>([])
+  const [reviewsCursor, setReviewsCursor] = useState<number | null>(null)
+  const [reviewsHasNext, setReviewsHasNext] = useState(false)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsLoadingMore, setReviewsLoadingMore] = useState(false)
+  const [reviewsError, setReviewsError] = useState<string | null>(null)
+  const [reviewsInitialized, setReviewsInitialized] = useState(false)
   const initializedRef = useRef(false)
 
   const displayName = member?.nickname ?? '회원'
@@ -166,6 +177,53 @@ export function MyPage() {
     }
   }
 
+  const loadInitialReviews = useCallback(async () => {
+    setReviewsLoading(true)
+    setReviewsError(null)
+    try {
+      const response = await getMyReviews(undefined, 10)
+      setReviews(response.items ?? [])
+      setReviewsCursor(response.nextCursor)
+      setReviewsHasNext(response.hasNext)
+    } catch {
+      setReviewsError('내 리뷰를 불러오지 못했어요.')
+    } finally {
+      setReviewsInitialized(true)
+      setReviewsLoading(false)
+    }
+  }, [])
+
+  const loadMoreReviews = useCallback(async () => {
+    if (!reviewsHasNext || reviewsCursor === null || reviewsLoadingMore) return
+    setReviewsLoadingMore(true)
+    setReviewsError(null)
+    try {
+      const response = await getMyReviews(reviewsCursor, 10)
+      setReviews((prev) => [...prev, ...(response.items ?? [])])
+      setReviewsCursor(response.nextCursor)
+      setReviewsHasNext(response.hasNext)
+    } catch {
+      setReviewsError('리뷰를 더 불러오지 못했어요.')
+    } finally {
+      setReviewsLoadingMore(false)
+    }
+  }, [reviewsCursor, reviewsHasNext, reviewsLoadingMore])
+
+  useEffect(() => {
+    if (memberId === null) return
+    setReviews([])
+    setReviewsCursor(null)
+    setReviewsHasNext(false)
+    setReviewsError(null)
+    setReviewsInitialized(false)
+  }, [memberId])
+
+  useEffect(() => {
+    if (tab !== 'reviews') return
+    if (reviewsInitialized) return
+    void loadInitialReviews()
+  }, [loadInitialReviews, reviewsInitialized, tab])
+
   if (!member) {
     return (
       <div className={styles.page}>
@@ -221,7 +279,13 @@ export function MyPage() {
         >
           회원정보
         </button>
-        {/* 내 리뷰/내 쿠폰 탭은 일시적으로 숨김 */}
+        <button
+          className={tab === 'reviews' ? styles.tabActive : ''}
+          onClick={() => setTab('reviews')}
+          type="button"
+        >
+          내 리뷰
+        </button>
       </nav>
 
       <section className={styles.card}>
@@ -292,8 +356,63 @@ export function MyPage() {
             </button>
           </>
         ) : null}
+        {tab === 'reviews' ? (
+          <>
+            {reviewsLoading ? <p className={styles.state}>리뷰를 불러오는 중...</p> : null}
+            {reviewsError ? <p className={styles.error}>{reviewsError}</p> : null}
+            {!reviewsLoading && reviews.length === 0 ? (
+              <p className={styles.state}>작성한 리뷰가 아직 없어요.</p>
+            ) : null}
+            {reviews.length > 0 ? (
+              <div className={styles.list}>
+                {reviews.map((item) => (
+                  <button
+                    key={item.reviewId}
+                    type="button"
+                    className={styles.listItemButton}
+                    onClick={() => navigate(`/reviews/${item.reviewId}`)}
+                  >
+                    <article className={styles.listItem}>
+                      <div className={styles.listHeader}>
+                        <strong>{item.restaurantName}</strong>
+                      </div>
+                      <div className={styles.ratingStars} aria-label={`별점 ${item.rating}점`}>
+                        {Array.from({ length: 5 }, (_, index) =>
+                          index < item.rating ? '★' : '☆',
+                        ).join('')}
+                      </div>
+                      <p>{item.content}</p>
+                      <time>{item.createdAt.slice(0, 10)}</time>
+                    </article>
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
-        {/* 내 리뷰/내 쿠폰 콘텐츠는 일시적으로 숨김 */}
+            {reviewsHasNext ? (
+              <button
+                className={styles.save}
+                onClick={() => {
+                  void loadMoreReviews()
+                }}
+                disabled={reviewsLoadingMore}
+              >
+                {reviewsLoadingMore ? '불러오는 중...' : '더보기'}
+              </button>
+            ) : null}
+
+            {reviewsError && !reviewsLoading ? (
+              <button
+                className={styles.save}
+                onClick={() => {
+                  void loadInitialReviews()
+                }}
+              >
+                다시 시도
+              </button>
+            ) : null}
+          </>
+        ) : null}
       </section>
 
       <div className={styles.bottomActions}>
