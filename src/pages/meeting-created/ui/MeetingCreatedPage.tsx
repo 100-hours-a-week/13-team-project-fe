@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import styles from './MeetingCreatedPage.module.css'
 import { request } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
 
 type InviteResponse = {
   meetingId: number
+  inviteCode: string
+}
+
+type MeetingRouteResponse = {
+  quickMeeting: boolean
   inviteCode: string
 }
 
@@ -103,6 +108,28 @@ export function MeetingCreatedPage() {
     [copyWithFallback, setCopiedFeedback],
   )
 
+  const handleMoveToDetail = useCallback(async () => {
+    if (!meetingId) {
+      setMessage('모임 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    try {
+      const detail = await request<MeetingRouteResponse>(`/api/v1/meetings/${meetingId}`)
+      if (detail.quickMeeting) {
+        if (!detail.inviteCode) {
+          setMessage('퀵 모임 초대코드를 확인할 수 없습니다.')
+          return
+        }
+        navigate(`/quick/${detail.inviteCode}`)
+        return
+      }
+      navigate(`/meetings/${meetingId}`)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '모임 상세로 이동하지 못했습니다.')
+    }
+  }, [meetingId])
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -161,9 +188,15 @@ export function MeetingCreatedPage() {
               >
                 초대 링크 복사
               </button>
-              <Link to={`/meetings/${meetingId}`} className={styles.primaryButton}>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  void handleMoveToDetail()
+                }}
+              >
                 모임 상세로 이동
-              </Link>
+              </button>
             </div>
           </>
         )}

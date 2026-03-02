@@ -1,0 +1,156 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px 16px 40px;
+}
+
+.header {
+  margin-bottom: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.description {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.note {
+  color: var(--muted);
+  margin: 0;
+  font-size: 13px;
+}
+
+.restaurantCard {
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.restaurantImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.restaurantInfo {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.restaurantInfo strong {
+  font-size: 16px;
+}
+
+.restaurantMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.categoryBadge {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: #ffe4d6;
+  color: #9a3412;
+  border-radius: 999px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ratingField {
+  margin-top: 8px;
+}
+
+.starRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.star,
+.starActive {
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  padding: 2px;
+  cursor: pointer;
+  color: #c7ced8;
+}
+
+.starActive {
+  color: #ffb400;
+}
+
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+  font-size: 13px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton {
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryButton {
+  background: #f6f7fb;
+  color: var(--muted);
+}

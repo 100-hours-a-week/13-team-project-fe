@@ -335,6 +335,36 @@
   cursor: pointer;
 }
 
+.meetingTypeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.typeButton,
+.typeButtonActive {
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.typeButtonActive {
+  border-color: var(--accent);
+  background: rgba(187, 203, 100, 0.25);
+  color: var(--ink);
+}
+
+.typeHint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .modalFallback {
   padding: 16px;
   border-radius: 12px;

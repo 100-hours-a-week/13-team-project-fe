@@ -78,11 +78,11 @@ export type SettlementWaitingResponse = {
 }
 
 export type SettlementResultParticipant = {
-  participantId: number
+  meetingParticipantId: number
   memberId: number
   nickname: string
   profileImageUrl: string | null
-  amount: number
+  amountDue: number
   paymentStatus: PaymentStatus
 }
 

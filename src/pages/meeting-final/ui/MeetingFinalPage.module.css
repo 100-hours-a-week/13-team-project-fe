@@ -70,6 +70,17 @@
   align-self: center;
 }
 
+.secondaryButton {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #374151;
+  align-self: center;
+}
+
 .imageArea {
   position: relative;
   width: 100%;
