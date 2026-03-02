@@ -20,7 +20,12 @@ export function QuickResultPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!session || !session.currentVoteId) {
+    if (!session) {
+      navigate(`/quick/${inviteCode}`, { replace: true })
+      return
+    }
+    const voteId = session.currentVoteId
+    if (voteId === null) {
       navigate(`/quick/${inviteCode}`, { replace: true })
       return
     }
@@ -32,7 +37,7 @@ export function QuickResultPage() {
       try {
         if (!active) return
         setError(null)
-        const response = await getQuickVoteResults(session.meetingId, session.currentVoteId)
+        const response = await getQuickVoteResults(session.meetingId, voteId)
         if (!active) return
         setItems(response.items ?? [])
         setLoading(false)

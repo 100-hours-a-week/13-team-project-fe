@@ -57,7 +57,12 @@ export function QuickVotePage() {
   }, [session?.voteDeadlineAt])
 
   useEffect(() => {
-    if (!session || !session.currentVoteId) {
+    if (!session) {
+      navigate(`/quick/${inviteCode}`, { replace: true })
+      return
+    }
+    const voteId = session.currentVoteId
+    if (voteId === null) {
       navigate(`/quick/${inviteCode}`, { replace: true })
       return
     }
@@ -71,7 +76,7 @@ export function QuickVotePage() {
         if (!active) return
         setLoadingCandidates(true)
         setError(null)
-        const response = await getQuickVoteCandidates(session.meetingId, session.currentVoteId)
+        const response = await getQuickVoteCandidates(session.meetingId, voteId)
         if (!active) return
         setCandidates(response.candidates ?? [])
         setLoadingCandidates(false)
@@ -96,12 +101,14 @@ export function QuickVotePage() {
   }, [inviteCode, session])
 
   useEffect(() => {
-    if (!session || !session.currentVoteId || !submitted) return
+    if (!session || !submitted) return
+    const voteId = session.currentVoteId
+    if (voteId === null) return
 
     let active = true
     const poll = async () => {
       try {
-        const response = await getQuickVoteStatus(session.meetingId, session.currentVoteId)
+        const response = await getQuickVoteStatus(session.meetingId, voteId)
         if (!active) return
         setStatus(response)
         if (response.voteStatus === 'COUNTED') {
@@ -129,7 +136,9 @@ export function QuickVotePage() {
   }
 
   const handleSubmit = useCallback(async () => {
-    if (!session || !session.currentVoteId || submitting) return
+    if (!session || submitting) return
+    const voteId = session.currentVoteId
+    if (voteId === null) return
 
     if (candidates.length === 0) {
       setError('후보 정보가 없어요.')
@@ -151,7 +160,7 @@ export function QuickVotePage() {
     try {
       setSubmitting(true)
       setError(null)
-      await submitQuickVote(session.meetingId, session.currentVoteId, { items })
+      await submitQuickVote(session.meetingId, voteId, { items })
       setSubmitted(true)
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
