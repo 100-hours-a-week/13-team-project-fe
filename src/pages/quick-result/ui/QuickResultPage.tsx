@@ -74,11 +74,33 @@ export function QuickResultPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate(`/quick/${inviteCode}`)}
+          aria-label="퀵모임 상세로 돌아가기"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
         <h1 className={styles.title}>퀵모임 결과</h1>
       </header>
 
+      <section className={styles.hero}>
+        <div className={styles.heroBadge}>
+          <span className={styles.checkIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+          <span className={styles.heroTitle}>TOP3</span>
+        </div>
+        <p className={styles.heroText}>퀵모임 투표 결과가 나왔어요!</p>
+      </section>
+
       {loading ? <p className={styles.note}>결과를 불러오는 중...</p> : null}
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? <p className={styles.note}>{error}</p> : null}
 
       {!loading && !error && sorted.length === 0 ? (
         <p className={styles.note}>아직 결과 집계 중이에요.</p>
@@ -88,13 +110,27 @@ export function QuickResultPage() {
         <section className={styles.list}>
           {sorted.map((item) => (
             <article key={item.candidateId} className={styles.card}>
-              <div className={styles.row}>
-                <strong>{item.rank}위</strong>
-                <span className={styles.category}>{item.categoryName}</span>
+              <div className={styles.rankBadge}>{item.rank}등</div>
+              <div className={styles.cardContent}>
+                <div className={styles.imageWrap}>
+                  {item.imageUrl1 ? (
+                    <img src={item.imageUrl1} alt={item.restaurantName} />
+                  ) : (
+                    <div className={styles.imagePlaceholder}>이미지 없음</div>
+                  )}
+                </div>
+                <div className={styles.info}>
+                  <div className={styles.nameRow}>
+                    <h2 className={styles.name}>{item.restaurantName}</h2>
+                    <span className={styles.categoryInline}>{item.categoryName}</span>
+                  </div>
+                  <p className={styles.meta}>
+                    <span>별점 {item.rating}</span>
+                    <span>거리 {item.distanceM}m</span>
+                  </p>
+                  <p className={styles.address}>{item.roadAddress || item.jibunAddress}</p>
+                </div>
               </div>
-              <h2 className={styles.name}>{item.restaurantName}</h2>
-              <p className={styles.meta}>좋아요 {item.likeCount} · 별점 {item.rating}</p>
-              <p className={styles.address}>{item.roadAddress || item.jibunAddress}</p>
             </article>
           ))}
         </section>

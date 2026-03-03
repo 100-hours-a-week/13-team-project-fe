@@ -154,3 +154,40 @@
   background: #f6f7fb;
   color: var(--muted);
 }
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 20;
+}
+
+.modal {
+  width: min(360px, 100%);
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+.modalText {
+  text-align: center;
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.modalButton {
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
