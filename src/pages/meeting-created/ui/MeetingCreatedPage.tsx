@@ -17,14 +17,18 @@ type MeetingRouteResponse = {
 export function MeetingCreatedPage() {
   const { meetingId } = useParams()
   const [inviteCode, setInviteCode] = useState<string | null>(null)
+  const [meetingRoute, setMeetingRoute] = useState<MeetingRouteResponse | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [copiedText, setCopiedText] = useState<string | null>(null)
 
   const inviteLink = useMemo(() => {
     if (!inviteCode) return ''
+    if (meetingRoute?.quickMeeting) {
+      return `${window.location.origin}/quick/${inviteCode}`
+    }
     return `${window.location.origin}/meetings/join?code=${inviteCode}`
-  }, [inviteCode])
+  }, [inviteCode, meetingRoute?.quickMeeting])
 
   const fetchInvite = useCallback(async () => {
     if (!meetingId) {
@@ -38,6 +42,7 @@ export function MeetingCreatedPage() {
       setMessage(null)
 
       const data: unknown = await request(`/api/v1/meetings/${meetingId}/invite-code`)
+      const detail = await request<MeetingRouteResponse>(`/api/v1/meetings/${meetingId}`)
 
       const typed = data as InviteResponse
       if (!typed?.inviteCode) {
@@ -45,6 +50,7 @@ export function MeetingCreatedPage() {
       }
 
       setInviteCode(typed.inviteCode)
+      setMeetingRoute(detail)
       setStatus('idle')
     } catch (error) {
       setStatus('error')
@@ -115,7 +121,9 @@ export function MeetingCreatedPage() {
     }
 
     try {
-      const detail = await request<MeetingRouteResponse>(`/api/v1/meetings/${meetingId}`)
+      const detail =
+        meetingRoute ?? (await request<MeetingRouteResponse>(`/api/v1/meetings/${meetingId}`))
+
       if (detail.quickMeeting) {
         if (!detail.inviteCode) {
           setMessage('퀵 모임 초대코드를 확인할 수 없습니다.')
@@ -128,7 +136,7 @@ export function MeetingCreatedPage() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '모임 상세로 이동하지 못했습니다.')
     }
-  }, [meetingId])
+  }, [meetingId, meetingRoute])
 
   return (
     <div className={styles.page}>

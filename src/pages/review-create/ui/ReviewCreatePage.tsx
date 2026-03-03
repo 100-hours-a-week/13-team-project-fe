@@ -14,6 +14,8 @@ export function ReviewCreatePage() {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [alertMessage, setAlertMessage] = useState<string | null>(null)
+  const [alertRedirectTo, setAlertRedirectTo] = useState<'settlement-completed' | 'mypage-reviews' | null>(null)
   const [restaurant, setRestaurant] = useState<FinalSelectionResponse | null>(null)
   const [restaurantLoading, setRestaurantLoading] = useState(true)
 
@@ -34,6 +36,12 @@ export function ReviewCreatePage() {
         setRestaurant(response)
       } catch (err) {
         if (!active) return
+        if (err instanceof ApiError && err.status === 404) {
+          setAlertMessage(err.message || '리뷰를 작성할 수 없는 상태예요.')
+          setAlertRedirectTo('settlement-completed')
+          setError(null)
+          return
+        }
         setError(err instanceof Error ? err.message : '식당 정보를 불러오지 못했어요.')
       } finally {
         if (active) {
@@ -74,7 +82,13 @@ export function ReviewCreatePage() {
       navigate(`/reviews/${response.reviewId}`)
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        navigate('/mypage?tab=reviews')
+        setAlertMessage(err.message || '이미 작성한 리뷰가 있어요.')
+        setAlertRedirectTo('mypage-reviews')
+        return
+      }
+      if (err instanceof ApiError && err.status === 404) {
+        setAlertMessage(err.message || '리뷰를 작성할 수 없는 상태예요.')
+        setAlertRedirectTo('settlement-completed')
         return
       }
       setError(err instanceof Error ? err.message : '리뷰 작성에 실패했어요.')
@@ -172,6 +186,27 @@ export function ReviewCreatePage() {
           </button>
         </div>
       </section>
+
+      {alertMessage && (
+        <div className={styles.modalBackdrop} role="presentation">
+          <div className={styles.modal} role="dialog" aria-modal="true">
+            <p className={styles.modalText}>{alertMessage}</p>
+            <button
+              type="button"
+              className={styles.modalButton}
+              onClick={() => {
+                if (alertRedirectTo === 'mypage-reviews') {
+                  navigate('/mypage?tab=reviews', { replace: true })
+                  return
+                }
+                navigate(`/meetings/${parsedMeetingId}/settlement/completed`, { replace: true })
+              }}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
