@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './QuickVotePage.module.css'
 import { ApiError } from '@/shared/lib/api'
@@ -13,6 +13,16 @@ import type { VoteChoice } from '@/entities/vote'
 import { getQuickSession, saveQuickSession } from '@/shared/lib/quick-session'
 import { navigate } from '@/shared/lib/navigation'
 
+type SwipeState = {
+  startX: number
+  startY: number
+  deltaX: number
+  deltaY: number
+  isDragging: boolean
+}
+
+const swipeThreshold = 80
+
 function normalizeInviteCode(value: string | undefined) {
   return (value ?? '').trim().toUpperCase()
 }
@@ -26,43 +36,36 @@ function formatLeftTime(deadline: string) {
   return `${min}:${sec}`
 }
 
-const choiceLabel: Record<VoteChoice, string> = {
-  LIKE: '좋아요',
-  DISLIKE: '별로예요',
-  NEUTRAL: '무난해요',
-}
-
 export function QuickVotePage() {
   const { inviteCode: inviteCodeParam } = useParams()
   const inviteCode = normalizeInviteCode(inviteCodeParam)
-  const session = getQuickSession(inviteCode)
+  const session = useMemo(() => getQuickSession(inviteCode), [inviteCode])
+
+  const meetingId = session?.meetingId ?? null
+  const voteId = session?.currentVoteId ?? null
 
   const [leftTime, setLeftTime] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<QuickVoteCandidate[]>([])
-  const [selections, setSelections] = useState<Record<number, VoteChoice>>({})
-  const [status, setStatus] = useState<QuickVoteStatusResponse | null>(null)
-  const [loadingCandidates, setLoadingCandidates] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [imageIndex, setImageIndex] = useState(0)
+  const [choices, setChoices] = useState<Array<{ candidateId: number; choice: VoteChoice }>>([])
+  const [history, setHistory] = useState<Array<{ candidateId: number; choice: VoteChoice }>>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<QuickVoteStatusResponse | null>(null)
+  const [swipeState, setSwipeState] = useState<SwipeState>({
+    startX: 0,
+    startY: 0,
+    deltaX: 0,
+    deltaY: 0,
+    isDragging: false,
+  })
+  const pointerIdRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (session?.voteDeadlineAt) {
-      const update = () => setLeftTime(formatLeftTime(session.voteDeadlineAt))
-      update()
-      const timerId = window.setInterval(update, 1000)
-      return () => window.clearInterval(timerId)
-    }
-    return
-  }, [session?.voteDeadlineAt])
-
-  useEffect(() => {
-    if (!session) {
-      navigate(`/quick/${inviteCode}`, { replace: true })
-      return
-    }
-    const voteId = session.currentVoteId
-    if (voteId === null) {
+    if (!session || voteId === null) {
       navigate(`/quick/${inviteCode}`, { replace: true })
       return
     }
@@ -73,13 +76,15 @@ export function QuickVotePage() {
 
     const fetchCandidates = async () => {
       try {
-        if (!active) return
-        setLoadingCandidates(true)
+        setLoading(true)
         setError(null)
-        const response = await getQuickVoteCandidates(session.meetingId, voteId)
+        const response = await getQuickVoteCandidates(meetingId as number, voteId)
         if (!active) return
         setCandidates(response.candidates ?? [])
-        setLoadingCandidates(false)
+        setCurrentIndex(0)
+        setImageIndex(0)
+        setChoices([])
+        setHistory([])
       } catch (err) {
         if (!active) return
         if (err instanceof ApiError && err.status === 409 && attempt < 20) {
@@ -87,8 +92,11 @@ export function QuickVotePage() {
           timerId = window.setTimeout(fetchCandidates, 1500)
           return
         }
-        setLoadingCandidates(false)
-        setError(err instanceof Error ? err.message : '후보를 불러오지 못했어요.')
+        setError(err instanceof Error ? err.message : '투표 후보를 불러오지 못했어요.')
+      } finally {
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
@@ -98,17 +106,23 @@ export function QuickVotePage() {
       active = false
       if (timerId) window.clearTimeout(timerId)
     }
-  }, [inviteCode, session])
+  }, [inviteCode, meetingId, session, voteId])
 
   useEffect(() => {
-    if (!session || !submitted) return
-    const voteId = session.currentVoteId
-    if (voteId === null) return
+    if (!session?.voteDeadlineAt) return
+    const update = () => setLeftTime(formatLeftTime(session.voteDeadlineAt))
+    update()
+    const timerId = window.setInterval(update, 1000)
+    return () => window.clearInterval(timerId)
+  }, [session?.voteDeadlineAt])
+
+  useEffect(() => {
+    if (!submitted || meetingId === null || voteId === null || !session) return
 
     let active = true
     const poll = async () => {
       try {
-        const response = await getQuickVoteStatus(session.meetingId, voteId)
+        const response = await getQuickVoteStatus(meetingId, voteId)
         if (!active) return
         setStatus(response)
         if (response.voteStatus === 'COUNTED') {
@@ -127,125 +141,295 @@ export function QuickVotePage() {
       active = false
       window.clearInterval(timerId)
     }
-  }, [inviteCode, session, submitted])
+  }, [inviteCode, meetingId, session, submitted, voteId])
 
-  const selectedCount = useMemo(() => Object.keys(selections).length, [selections])
+  const currentCandidate = candidates[currentIndex]
+  const images = useMemo(() => {
+    if (!currentCandidate) return []
+    const list = [
+      currentCandidate.imageUrl1,
+      currentCandidate.imageUrl2,
+      currentCandidate.imageUrl3,
+    ].filter(Boolean) as string[]
+    return Array.from(new Set(list))
+  }, [currentCandidate])
 
-  const handleSelect = (candidateId: number, choice: VoteChoice) => {
-    setSelections((prev) => ({ ...prev, [candidateId]: choice }))
-  }
+  useEffect(() => {
+    setImageIndex(0)
+  }, [currentIndex])
 
-  const handleSubmit = useCallback(async () => {
-    if (!session || submitting) return
-    const voteId = session.currentVoteId
-    if (voteId === null) return
+  const totalCount = candidates.length
+  const votedCount = choices.length
 
-    if (candidates.length === 0) {
-      setError('후보 정보가 없어요.')
-      return
-    }
-
-    const items = candidates
-      .map((candidate) => ({
-        candidateId: candidate.candidateId,
-        choice: selections[candidate.candidateId],
-      }))
-      .filter((item): item is { candidateId: number; choice: VoteChoice } => Boolean(item.choice))
-
-    if (items.length !== candidates.length) {
-      setError('모든 후보에 대해 선택해 주세요.')
-      return
-    }
-
-    try {
-      setSubmitting(true)
-      setError(null)
-      await submitQuickVote(session.meetingId, voteId, { items })
-      setSubmitted(true)
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setSubmitted(true)
+  const handleVote = useCallback(
+    async (choice: VoteChoice) => {
+      if (!currentCandidate || submitting || submitted || meetingId === null || voteId === null) {
         return
       }
-      setError(err instanceof Error ? err.message : '투표 제출에 실패했어요.')
-    } finally {
-      setSubmitting(false)
-    }
-  }, [candidates, selections, session, submitting])
 
-  if (!session) {
-    return null
+      const nextItem = {
+        candidateId: currentCandidate.candidateId,
+        choice,
+      }
+
+      const nextChoices = [...choices, nextItem]
+      setChoices(nextChoices)
+      setHistory((prev) => [...prev, nextItem])
+      const nextIndex = currentIndex + 1
+      setCurrentIndex(nextIndex)
+      setSwipeState((prev) => ({ ...prev, deltaX: 0, deltaY: 0, isDragging: false }))
+
+      if (nextIndex >= candidates.length) {
+        try {
+          setSubmitting(true)
+          await submitQuickVote(meetingId, voteId, { items: nextChoices })
+          setSubmitted(true)
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 409) {
+            setSubmitted(true)
+          } else {
+            setError(err instanceof Error ? err.message : '투표 저장에 실패했어요.')
+          }
+        } finally {
+          setSubmitting(false)
+        }
+      }
+    },
+    [
+      candidates.length,
+      choices,
+      currentCandidate,
+      currentIndex,
+      meetingId,
+      submitted,
+      submitting,
+      voteId,
+    ],
+  )
+
+  const handleUndo = () => {
+    if (history.length === 0 || submitting || submitted) return
+    const nextHistory = history.slice(0, -1)
+    const last = history[history.length - 1]
+    setHistory(nextHistory)
+    setChoices((prev) => prev.slice(0, -1))
+    const targetIndex = Math.max(currentIndex - 1, 0)
+    if (last && candidates[targetIndex]?.candidateId === last.candidateId) {
+      setCurrentIndex(targetIndex)
+    } else {
+      setCurrentIndex(Math.max(currentIndex - 1, 0))
+    }
   }
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!currentCandidate || submitting || submitted) return
+    pointerIdRef.current = event.pointerId
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setSwipeState({
+      startX: event.clientX,
+      startY: event.clientY,
+      deltaX: 0,
+      deltaY: 0,
+      isDragging: true,
+    })
+  }
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!swipeState.isDragging || pointerIdRef.current !== event.pointerId) return
+    setSwipeState((prev) => ({
+      ...prev,
+      deltaX: event.clientX - prev.startX,
+      deltaY: event.clientY - prev.startY,
+    }))
+  }
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!swipeState.isDragging || pointerIdRef.current !== event.pointerId) return
+    event.currentTarget.releasePointerCapture(event.pointerId)
+    pointerIdRef.current = null
+
+    const { deltaX, deltaY } = swipeState
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+
+    if (absX > swipeThreshold && absX >= absY) {
+      void handleVote(deltaX > 0 ? 'LIKE' : 'DISLIKE')
+      return
+    }
+
+    if (absY > swipeThreshold && absY > absX && deltaY < 0) {
+      void handleVote('NEUTRAL')
+      return
+    }
+
+    setSwipeState((prev) => ({ ...prev, deltaX: 0, deltaY: 0, isDragging: false }))
+  }
+
+  const progressRatio = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
+  const disableActions = !currentCandidate || submitting || loading || submitted
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>퀵 투표</h1>
-        <p className={styles.deadline}>마감까지 {leftTime || '확인 중...'}</p>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate(`/quick/${inviteCode}`)}
+          aria-label="퀵모임 상세로 돌아가기"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className={styles.progressWrapper}>
+          <div className={styles.progressText}>
+            {votedCount}/{totalCount}
+          </div>
+          <div className={styles.progressBar}>
+            <div className={styles.progressFill} style={{ width: `${progressRatio}%` }} />
+          </div>
+        </div>
       </header>
 
-      {loadingCandidates ? <p className={styles.note}>후보를 불러오는 중...</p> : null}
-      {error ? <p className={styles.error}>{error}</p> : null}
-
-      {!loadingCandidates && !submitted && (
-        <section className={styles.list}>
-          {candidates.map((candidate) => (
-            <article key={candidate.candidateId} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <strong>{candidate.restaurantName}</strong>
-                <span className={styles.category}>{candidate.categoryName}</span>
-              </div>
-              <p className={styles.meta}>거리 {candidate.distanceM}m · 별점 {candidate.rating}</p>
-              <p className={styles.address}>{candidate.roadAddress || candidate.jibunAddress}</p>
-              <div className={styles.choices}>
-                {(['LIKE', 'DISLIKE', 'NEUTRAL'] as const).map((choice) => {
-                  const active = selections[candidate.candidateId] === choice
-                  return (
-                    <button
-                      key={choice}
-                      type="button"
-                      className={active ? styles.choiceActive : styles.choiceButton}
-                      onClick={() => handleSelect(candidate.candidateId, choice)}
-                    >
-                      {choiceLabel[choice]}
-                    </button>
-                  )
-                })}
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
+      <p className={styles.deadline}>마감까지 {leftTime || '확인 중...'}</p>
+      {loading && <p className={styles.note}>후보를 불러오는 중...</p>}
+      {error && <p className={styles.note}>{error}</p>}
 
       {submitted ? (
         <section className={styles.waitCard}>
           <p>투표를 제출했어요. 집계가 끝나면 결과로 이동합니다.</p>
-          <p>
-            {status ? `${status.submittedCount}/${status.totalCount}명 제출` : '제출 현황 확인 중...'}
-          </p>
+          <p>{status ? `${status.submittedCount}/${status.totalCount}명 제출` : '제출 현황 확인 중...'}</p>
         </section>
       ) : null}
 
-      {!submitted ? (
-        <button
-          type="button"
-          className={styles.primaryButton}
-          onClick={() => {
-            void handleSubmit()
-          }}
-          disabled={submitting || selectedCount !== candidates.length || candidates.length === 0}
-        >
-          {submitting ? '제출 중...' : '투표 제출'}
-        </button>
-      ) : null}
+      {!loading && !error && !submitted && currentCandidate && (
+        <section className={styles.cardArea}>
+          <div
+            className={styles.card}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              transform: `translate(${swipeState.deltaX}px, ${swipeState.deltaY}px) rotate(${swipeState.deltaX * 0.05}deg)`,
+            }}
+          >
+            <div className={styles.imageArea}>
+              {images.length > 0 ? (
+                <>
+                  <img
+                    src={images[imageIndex]}
+                    alt={currentCandidate.restaurantName}
+                    draggable={false}
+                    onDragStart={(event) => event.preventDefault()}
+                  />
+                  {images.length > 1 && (
+                    <div className={styles.imageNav}>
+                      <button
+                        type="button"
+                        className={styles.imageButton}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onPointerUp={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setImageIndex((prev) => (prev - 1 + images.length) % images.length)
+                        }}
+                        aria-label="이전 이미지"
+                      >
+                        ‹
+                      </button>
+                      <div className={styles.imageDots}>
+                        {images.map((_, index) => (
+                          <span
+                            key={`dot-${index}`}
+                            className={index === imageIndex ? styles.dotActive : styles.dot}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.imageButton}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onPointerUp={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setImageIndex((prev) => (prev + 1) % images.length)
+                        }}
+                        aria-label="다음 이미지"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className={styles.imagePlaceholder}>이미지가 없어요</div>
+              )}
+            </div>
 
-      <button
-        type="button"
-        className={styles.secondaryButton}
-        onClick={() => navigate(`/quick/${inviteCode}`)}
-      >
-        퀵모임 상세로
-      </button>
+            <div className={styles.infoArea}>
+              <div className={styles.titleRow}>
+                <h2 className={styles.restaurantName}>{currentCandidate.restaurantName}</h2>
+                <span className={styles.category}>{currentCandidate.categoryName}</span>
+              </div>
+              <div className={styles.metaRow}>
+                <span>거리 {currentCandidate.distanceM}m</span>
+                <span>별점 {currentCandidate.rating}</span>
+              </div>
+              <div className={styles.address}>
+                {currentCandidate.roadAddress || currentCandidate.jibunAddress}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!loading && !error && !submitted && !currentCandidate && (
+        <p className={styles.note}>모든 투표가 완료되었어요.</p>
+      )}
+
+      {!submitted && (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={() => {
+              void handleVote('DISLIKE')
+            }}
+            disabled={disableActions}
+          >
+            싫어요
+          </button>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={() => {
+              void handleVote('NEUTRAL')
+            }}
+            disabled={disableActions}
+          >
+            중립
+          </button>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={() => {
+              void handleVote('LIKE')
+            }}
+            disabled={disableActions}
+          >
+            좋아요
+          </button>
+          <button
+            type="button"
+            className={styles.undoButton}
+            onClick={handleUndo}
+            disabled={disableActions}
+          >
+            되돌리기
+          </button>
+        </div>
+      )}
     </div>
   )
 }
