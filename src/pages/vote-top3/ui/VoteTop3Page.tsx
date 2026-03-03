@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom'
 import styles from './VoteTop3Page.module.css'
 import {
   finalizeSelection,
-  getVoteCandidates,
   getVoteResults,
   type VoteResultsItem,
 } from '@/entities/vote'
@@ -85,7 +84,6 @@ export function VoteTop3Page() {
         `/api/v1/meetings/${parsedMeetingId}/votes/${parsedVoteId}/start-revote`,
         { method: 'POST' },
       )
-      await getVoteCandidates(parsedMeetingId, parsedVoteId)
       navigate(`/meetings/${parsedMeetingId}`)
     } catch (err) {
       const message = err instanceof Error ? err.message : '재추천 요청에 실패했습니다.'

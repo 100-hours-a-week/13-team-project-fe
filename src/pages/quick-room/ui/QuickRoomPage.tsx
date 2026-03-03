@@ -8,7 +8,6 @@ import {
   regenerateQuickVote,
   type QuickVoteStatus,
   type QuickMeetingDetailResponse,
-  type QuickMeetingEnterResponse,
 } from '@/entities/quick-meeting'
 import { useAuth } from '@/app/providers/auth-context'
 import {
@@ -38,20 +37,6 @@ const statusLabel: Record<QuickVoteStatus, string> = {
   FAILED: '준비 중',
   CLOSED: '준비 중',
   UNKNOWN: '준비 중',
-}
-
-function toSession(data: QuickMeetingEnterResponse): QuickSession {
-  return {
-    meetingId: data.meetingId,
-    inviteCode: data.inviteCode,
-    locationAddress: data.locationAddress,
-    participantCount: data.participantCount,
-    targetHeadcount: data.targetHeadcount,
-    voteDeadlineAt: data.voteDeadlineAt,
-    currentVoteId: data.currentVoteId,
-    voteStatus: data.voteStatus,
-    hostMemberId: data.hostMemberId ?? null,
-  }
 }
 
 function toDetailSession(data: QuickMeetingDetailResponse): QuickSession {
@@ -92,28 +77,87 @@ export function QuickRoomPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchSession = useCallback(async () => {
+  const enterMeeting = useCallback(async () => {
+    const storedGuestUuid = getQuickGuestUuid(inviteCode)
+    try {
+      const response = await enterQuickMeeting({
+        inviteCode,
+        ...(storedGuestUuid ? { guestUuid: storedGuestUuid } : {}),
+      })
+      if (response.guestUuid) {
+        saveQuickGuestUuid(inviteCode, response.guestUuid)
+      }
+      return true
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400 && storedGuestUuid) {
+        removeQuickGuestUuid(inviteCode)
+        const retry = await enterQuickMeeting({ inviteCode })
+        if (retry.guestUuid) {
+          saveQuickGuestUuid(inviteCode, retry.guestUuid)
+        }
+        return true
+      }
+      throw err
+    }
+  }, [inviteCode])
+
+  const fetchSession = useCallback(async (showLoading = false) => {
     if (inviteCode.length !== 8) {
       setError('초대코드 형식이 올바르지 않아요.')
       setLoading(false)
-      return
+      return null
     }
 
     try {
+      if (showLoading) setLoading(true)
       setError(null)
       const response = await getQuickMeetingDetail(inviteCode)
       const next = toDetailSession(response)
       setSession(next)
       saveQuickSession(inviteCode, next)
+      return next
     } catch (err) {
       setError(getEnterErrorMessage(err))
+      return null
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }, [inviteCode])
 
   useEffect(() => {
-    void fetchSession()
+    let active = true
+
+    const init = async () => {
+      if (inviteCode.length !== 8) {
+        setError('초대코드 형식이 올바르지 않아요.')
+        setLoading(false)
+        return
+      }
+      try {
+        setLoading(true)
+        setError(null)
+        await enterMeeting()
+        if (!active) return
+        await fetchSession(false)
+      } catch (err) {
+        if (!active) return
+        setError(getEnterErrorMessage(err))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void init()
+    return () => {
+      active = false
+    }
+  }, [enterMeeting, fetchSession, inviteCode])
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      void fetchSession(false)
+    }, 2500)
+    return () => window.clearInterval(timerId)
   }, [fetchSession])
 
   useEffect(() => {
@@ -139,7 +183,7 @@ export function QuickRoomPage() {
       setActionLoading(true)
       setError(null)
       await regenerateQuickVote(session.meetingId)
-      await fetchSession()
+      await fetchSession(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '투표 재생성에 실패했어요.')
     } finally {
@@ -147,62 +191,24 @@ export function QuickRoomPage() {
     }
   }, [actionLoading, fetchSession, session])
 
-  const handleEnterVote = useCallback(async () => {
+  const handleEnterVote = useCallback(() => {
     if (!session || actionLoading) return
-    try {
-      setActionLoading(true)
-      setError(null)
-      const storedGuestUuid = getQuickGuestUuid(inviteCode)
-      try {
-        const response = await enterQuickMeeting({
-          inviteCode: session.inviteCode,
-          ...(storedGuestUuid ? { guestUuid: storedGuestUuid } : {}),
-        })
-        if (response.guestUuid) {
-          saveQuickGuestUuid(inviteCode, response.guestUuid)
-        }
-        const next = toSession(response)
-        setSession(next)
-        saveQuickSession(inviteCode, next)
-        if (!next.currentVoteId) {
-          setError('현재 진행 중인 투표가 없어요.')
-          return
-        }
-        navigate(`/quick/${session.inviteCode}/vote`)
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 400 && storedGuestUuid) {
-          removeQuickGuestUuid(inviteCode)
-          const retry = await enterQuickMeeting({ inviteCode: session.inviteCode })
-          if (retry.guestUuid) {
-            saveQuickGuestUuid(inviteCode, retry.guestUuid)
-          }
-          const next = toSession(retry)
-          setSession(next)
-          saveQuickSession(inviteCode, next)
-          if (!next.currentVoteId) {
-            setError('현재 진행 중인 투표가 없어요.')
-            return
-          }
-          navigate(`/quick/${session.inviteCode}/vote`)
-          return
-        }
-        throw err
-      }
-    } catch (err) {
-      setError(getEnterErrorMessage(err))
-    } finally {
-      setActionLoading(false)
+    if (!session.currentVoteId) {
+      setError('투표 준비중입니다. 잠시 후 다시 시도해 주세요.')
+      return
     }
-  }, [actionLoading, inviteCode, session])
+    setError(null)
+    navigate(`/quick/${session.inviteCode}/vote`)
+  }, [actionLoading, session])
 
   const buttonConfig = useMemo(() => {
     const status = session?.voteStatus ?? 'UNKNOWN'
     if (status === 'OPEN') {
       return {
-        label: actionLoading ? '입장 중...' : '투표 참여하기',
+        label: '투표 참여하기',
         disabled: !canGoVote || actionLoading,
         onClick: () => {
-          void handleEnterVote()
+          handleEnterVote()
         },
       }
     }
@@ -247,6 +253,16 @@ export function QuickRoomPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate('/main')}
+          aria-label="메인으로 돌아가기"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
         <h1 className={styles.title}>퀵 모임</h1>
       </header>
 

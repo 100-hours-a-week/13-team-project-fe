@@ -13,7 +13,9 @@ function normalizeInviteCode(value: string | undefined) {
 export function QuickResultPage() {
   const { inviteCode: inviteCodeParam } = useParams()
   const inviteCode = normalizeInviteCode(inviteCodeParam)
-  const session = getQuickSession(inviteCode)
+  const session = useMemo(() => getQuickSession(inviteCode), [inviteCode])
+  const meetingId = session?.meetingId ?? null
+  const voteId = session?.currentVoteId ?? null
 
   const [items, setItems] = useState<QuickVoteResultItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,28 +26,32 @@ export function QuickResultPage() {
       navigate(`/quick/${inviteCode}`, { replace: true })
       return
     }
-    const voteId = session.currentVoteId
     if (voteId === null) {
+      navigate(`/quick/${inviteCode}`, { replace: true })
+      return
+    }
+    if (meetingId === null) {
       navigate(`/quick/${inviteCode}`, { replace: true })
       return
     }
 
     let active = true
     let timerId: number | null = null
+    let attempts = 0
 
     const fetchResults = async () => {
       try {
         if (!active) return
         setError(null)
-        const response = await getQuickVoteResults(session.meetingId, voteId)
+        const response = await getQuickVoteResults(meetingId, voteId)
         if (!active) return
         setItems(response.items ?? [])
         setLoading(false)
       } catch (err) {
         if (!active) return
-        if (err instanceof ApiError && err.status === 409) {
+        if (err instanceof ApiError && err.status === 409 && attempts < 30) {
+          attempts += 1
           timerId = window.setTimeout(fetchResults, 2000)
-          setLoading(false)
           return
         }
         setError(err instanceof Error ? err.message : '결과를 불러오지 못했어요.')
@@ -59,7 +65,7 @@ export function QuickResultPage() {
       active = false
       if (timerId) window.clearTimeout(timerId)
     }
-  }, [inviteCode, session])
+  }, [inviteCode, meetingId, session, voteId])
 
   const sorted = useMemo(() => [...items].sort((a, b) => a.rank - b.rank), [items])
 
@@ -107,7 +113,7 @@ export function QuickResultPage() {
           className={styles.primaryButton}
           onClick={() => {
             removeQuickSession(inviteCode)
-            navigate('/quick')
+            navigate('/main')
           }}
         >
           나가기
