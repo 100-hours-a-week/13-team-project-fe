@@ -14,6 +14,7 @@ export function SettlementMenuSelectionPage() {
   const parsedMeetingId = Number(meetingId)
   const [items, setItems] = useState<SettlementItem[]>([])
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [confirmNoMeal, setConfirmNoMeal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +61,10 @@ export function SettlementMenuSelectionPage() {
 
   const handleConfirm = async () => {
     if (!Number.isFinite(parsedMeetingId) || submitting) return
+    if (selectedIds.length === 0 && !confirmNoMeal) {
+      setError("메뉴를 선택하거나 '아무것도 안 먹었어요'를 체크해 주세요.")
+      return
+    }
     try {
       setSubmitting(true)
       setError(null)
@@ -103,6 +108,18 @@ export function SettlementMenuSelectionPage() {
             })}
           </section>
 
+          <label className={styles.noMealOption}>
+            <input
+              type="checkbox"
+              checked={confirmNoMeal}
+              onChange={(event) => {
+                setConfirmNoMeal(event.target.checked)
+                setError(null)
+              }}
+            />
+            <span>아무것도 안 먹었어요</span>
+          </label>
+
           <button
             type="button"
             className={styles.primaryButton}
@@ -110,6 +127,14 @@ export function SettlementMenuSelectionPage() {
             disabled={submitting}
           >
             정산 계산 요청
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+            disabled={submitting}
+          >
+            모임 상세로 이동
           </button>
         </>
       )}

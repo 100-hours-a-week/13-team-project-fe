@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from './QuickEnterPage.module.css'
+import { enterQuickMeeting } from '@/entities/quick-meeting'
+import { ApiError, initCsrfToken } from '@/shared/lib/api'
+import { getQuickGuestUuid, removeQuickGuestUuid, saveQuickGuestUuid } from '@/shared/lib/quick-session'
 import { navigate } from '@/shared/lib/navigation'
 
 function normalizeInviteCode(value: string) {
@@ -8,14 +11,65 @@ function normalizeInviteCode(value: string) {
 
 export function QuickEnterPage() {
   const [inviteCode, setInviteCode] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleEnter = () => {
+  useEffect(() => {
+    void initCsrfToken()
+  }, [])
+
+  const handleEnter = async () => {
     if (inviteCode.length !== 8) {
       setError('초대코드 8자리를 입력해 주세요.')
       return
     }
-    navigate(`/quick/${inviteCode}`)
+
+    try {
+      setLoading(true)
+      setError(null)
+      await initCsrfToken()
+
+      const storedGuestUuid = getQuickGuestUuid(inviteCode)
+      try {
+        const response = await enterQuickMeeting({
+          inviteCode,
+          ...(storedGuestUuid ? { guestUuid: storedGuestUuid } : {}),
+        })
+        if (response.guestUuid) {
+          saveQuickGuestUuid(inviteCode, response.guestUuid)
+        }
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 400 && storedGuestUuid) {
+          removeQuickGuestUuid(inviteCode)
+          const retry = await enterQuickMeeting({ inviteCode })
+          if (retry.guestUuid) {
+            saveQuickGuestUuid(inviteCode, retry.guestUuid)
+          }
+        } else {
+          throw err
+        }
+      }
+
+      navigate(`/quick/${inviteCode}`)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 404) {
+          setError('초대코드를 확인해주세요.')
+          return
+        }
+        if (err.status === 409) {
+          setError('정원이 가득 찼습니다.')
+          return
+        }
+        if (err.status === 400) {
+          setError('입장 정보가 올바르지 않아요. 다시 시도해 주세요.')
+          return
+        }
+      }
+      setError(err instanceof Error ? err.message : '퀵 모임 참가에 실패했어요.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -37,8 +91,8 @@ export function QuickEnterPage() {
 
         {error ? <p className={styles.error}>{error}</p> : null}
 
-        <button type="button" className={styles.primaryButton} onClick={handleEnter}>
-          입장하기
+        <button type="button" className={styles.primaryButton} onClick={() => void handleEnter()} disabled={loading}>
+          {loading ? '입장 중...' : '입장하기'}
         </button>
       </section>
     </div>

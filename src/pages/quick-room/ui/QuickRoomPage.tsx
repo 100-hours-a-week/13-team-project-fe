@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './QuickRoomPage.module.css'
-import { ApiError } from '@/shared/lib/api'
+import { ApiError, initCsrfToken } from '@/shared/lib/api'
 import {
   enterQuickMeeting,
   getQuickMeetingDetail,
@@ -80,6 +80,7 @@ export function QuickRoomPage() {
   const enterMeeting = useCallback(async () => {
     const storedGuestUuid = getQuickGuestUuid(inviteCode)
     try {
+      await initCsrfToken()
       const response = await enterQuickMeeting({
         inviteCode,
         ...(storedGuestUuid ? { guestUuid: storedGuestUuid } : {}),
@@ -91,6 +92,7 @@ export function QuickRoomPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 400 && storedGuestUuid) {
         removeQuickGuestUuid(inviteCode)
+        await initCsrfToken()
         const retry = await enterQuickMeeting({ inviteCode })
         if (retry.guestUuid) {
           saveQuickGuestUuid(inviteCode, retry.guestUuid)
@@ -101,7 +103,7 @@ export function QuickRoomPage() {
     }
   }, [inviteCode])
 
-  const fetchSession = useCallback(async (showLoading = false) => {
+  const fetchSession = useCallback(async (showLoading = false, recovered = false) => {
     if (inviteCode.length !== 8) {
       setError('초대코드 형식이 올바르지 않아요.')
       setLoading(false)
@@ -117,41 +119,32 @@ export function QuickRoomPage() {
       saveQuickSession(inviteCode, next)
       return next
     } catch (err) {
+      if (!recovered && err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        try {
+          await enterMeeting()
+          return await fetchSession(showLoading, true)
+        } catch (recoverErr) {
+          const recoverMessage = getEnterErrorMessage(recoverErr)
+          setError(recoverMessage)
+          if (
+            recoverErr instanceof ApiError &&
+            (recoverErr.status === 403 || recoverErr.status === 404)
+          ) {
+            navigate('/quick', { replace: true })
+          }
+          return null
+        }
+      }
       setError(getEnterErrorMessage(err))
       return null
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [inviteCode])
+  }, [enterMeeting, inviteCode])
 
   useEffect(() => {
-    let active = true
-
-    const init = async () => {
-      if (inviteCode.length !== 8) {
-        setError('초대코드 형식이 올바르지 않아요.')
-        setLoading(false)
-        return
-      }
-      try {
-        setLoading(true)
-        setError(null)
-        await enterMeeting()
-        if (!active) return
-        await fetchSession(false)
-      } catch (err) {
-        if (!active) return
-        setError(getEnterErrorMessage(err))
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    void init()
-    return () => {
-      active = false
-    }
-  }, [enterMeeting, fetchSession, inviteCode])
+    void fetchSession(true)
+  }, [fetchSession])
 
   useEffect(() => {
     const timerId = window.setInterval(() => {

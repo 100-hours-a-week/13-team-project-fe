@@ -63,9 +63,9 @@ export function SettlementCompletedPage() {
         <button
           type="button"
           className={styles.secondaryButton}
-          onClick={() => navigate('/main')}
+          onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
         >
-          홈으로 돌아가기
+          모임 상세로 이동
         </button>
       </div>
     </div>
