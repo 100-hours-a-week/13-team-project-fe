@@ -31,11 +31,13 @@ type MeetingDetailResponse = {
   hasVotedCurrent: boolean
   finalSelected: boolean
   meetingStatus: string
+  settlementStatus: string | null
 }
 
 type MeetingDetailStateResponse = {
   meetingStatus: string
   voteStatus: string | null
+  settlementStatus: string | null
   currentVoteId: number | null
   participantCount: number
   participants: MeetingParticipantSummary[]
@@ -118,6 +120,7 @@ export function MeetingDetailPage() {
         participants: state.participants ?? prev.participants,
         hasVotedCurrent: state.hasVotedCurrent,
         finalSelected: state.finalSelected,
+        settlementStatus: state.settlementStatus,
       }
     })
   }, [])
@@ -150,6 +153,7 @@ export function MeetingDetailPage() {
         prev.participantCount !== state.participantCount ||
         prev.meetingStatus !== state.meetingStatus ||
         prev.voteStatus !== state.voteStatus ||
+        prev.settlementStatus !== state.settlementStatus ||
         prev.hasVotedCurrent !== state.hasVotedCurrent ||
         prev.finalSelected !== state.finalSelected ||
         (state.meetingStatus === 'READY' && prev.participants?.length !== state.participants?.length)
@@ -254,6 +258,10 @@ export function MeetingDetailPage() {
     if (!data?.voteStatus) return false
     return ['GENERATING', 'OPEN', 'COUNTING'].includes(data.voteStatus)
   }, [data?.voteStatus])
+  const isSettlementLeaveBlocked = useMemo(() => {
+    if (!data?.settlementStatus) return false
+    return ['SELECTION_OPEN', 'CALCULATING'].includes(data.settlementStatus)
+  }, [data?.settlementStatus])
 
   const canEditMeeting = Boolean(
     data &&
@@ -357,7 +365,12 @@ export function MeetingDetailPage() {
 
       navigate('/main')
     } catch (err) {
-      setModalMessage(err instanceof Error ? err.message : '모임 떠나기에 실패했습니다.')
+      if (err instanceof Error && 'status' in err && (err as { status?: number }).status === 409) {
+        setModalMessage('정산 진행 중에는 탈퇴할 수 없어요.')
+        void fetchState()
+      } else {
+        setModalMessage(err instanceof Error ? err.message : '모임 떠나기에 실패했습니다.')
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -509,6 +522,10 @@ export function MeetingDetailPage() {
                       ? '투표가 진행 중일 때는 모임을 삭제할 수 없어요.'
                       : '투표가 진행 중일 때는 모임을 떠날 수 없어요.',
                   )
+                  return
+                }
+                if (!isHost && isSettlementLeaveBlocked) {
+                  setModalMessage('정산 진행 중에는 모임을 떠날 수 없어요.')
                   return
                 }
                 if (isHost) {

@@ -98,14 +98,20 @@ export function SettlementResultPage() {
 
   useEffect(() => {
     if (participants.length === 0) return
-    if (isHost && participants.every((item) => item.paymentStatus === 'DONE')) {
+    if (
+      isHost &&
+      hostMemberId !== null &&
+      participants
+        .filter((item) => item.memberId !== hostMemberId)
+        .every((item) => item.paymentStatus === 'DONE')
+    ) {
       navigate(`/meetings/${parsedMeetingId}/settlement/completed`, { replace: true })
       return
     }
     if (!isHost && myParticipant?.paymentStatus === 'DONE') {
       navigate(`/meetings/${parsedMeetingId}/settlement/completed`, { replace: true })
     }
-  }, [isHost, myParticipant?.paymentStatus, parsedMeetingId, participants])
+  }, [hostMemberId, isHost, myParticipant?.paymentStatus, parsedMeetingId, participants])
 
   const handleRequestMyPayment = async () => {
     if (!Number.isFinite(parsedMeetingId) || busyAction) return
@@ -228,16 +234,34 @@ export function SettlementResultPage() {
               >
                 정산 완료
               </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+                disabled={busyAction !== null}
+              >
+                모임 상세로 이동
+              </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={handleRequestMyPayment}
-              disabled={busyAction !== null || myParticipant?.paymentStatus !== 'UNPAID'}
-            >
-              송금 확인 요청
-            </button>
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={handleRequestMyPayment}
+                disabled={busyAction !== null || myParticipant?.paymentStatus !== 'UNPAID'}
+              >
+                송금 확인 요청
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+                disabled={busyAction !== null}
+              >
+                모임 상세로 이동
+              </button>
+            </div>
           )}
         </>
       )}

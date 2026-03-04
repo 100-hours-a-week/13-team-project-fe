@@ -52,6 +52,20 @@
   color: var(--muted);
 }
 
+.noMealOption {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.noMealOption input {
+  width: 16px;
+  height: 16px;
+}
+
 .primaryButton {
   width: 100%;
   margin-top: 16px;
@@ -68,4 +82,17 @@
 .primaryButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.secondaryButton {
+  width: 100%;
+  margin-top: 10px;
+  border: none;
+  border-radius: 12px;
+  background: #f6f7fb;
+  color: var(--muted);
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
 }

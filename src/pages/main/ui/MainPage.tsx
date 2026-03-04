@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import styles from './MainPage.module.css'
 import { getMyMeetings, participateMeeting } from '@/entities/meeting'
-import { logout, request } from '@/shared/lib/api'
+import { enterQuickMeeting } from '@/entities/quick-meeting'
+import { logout, request, ApiError, initCsrfToken } from '@/shared/lib/api'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import logoImage from '@/assets/logo.png'
 import { BottomNav } from '@/shared/ui/bottom-nav'
+import { getQuickGuestUuid, removeQuickGuestUuid, saveQuickGuestUuid } from '@/shared/lib/quick-session'
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
 type MeetingForQuickRouteResponse = {
+  quickMeeting: boolean
   inviteCode: string
 }
 
@@ -106,10 +109,65 @@ export function MainPage() {
       setJoinError('초대 코드를 입력해주세요.')
       return
     }
+    const normalizedInviteCode = inviteCode.trim().toUpperCase()
     setJoinState('loading')
     setJoinError(null)
     try {
-      const result = await participateMeeting(inviteCode.trim())
+      await initCsrfToken()
+      const storedGuestUuid = getQuickGuestUuid(normalizedInviteCode)
+      try {
+        const quickEnter = await enterQuickMeeting({
+          inviteCode: normalizedInviteCode,
+          ...(storedGuestUuid ? { guestUuid: storedGuestUuid } : {}),
+        })
+        if (quickEnter.guestUuid) {
+          saveQuickGuestUuid(normalizedInviteCode, quickEnter.guestUuid)
+        }
+        navigate(`/quick/${normalizedInviteCode}`)
+        return
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 400 && storedGuestUuid) {
+          removeQuickGuestUuid(normalizedInviteCode)
+          const retry = await enterQuickMeeting({ inviteCode: normalizedInviteCode })
+          if (retry.guestUuid) {
+            saveQuickGuestUuid(normalizedInviteCode, retry.guestUuid)
+          }
+          navigate(`/quick/${normalizedInviteCode}`)
+          return
+        }
+        if (error instanceof ApiError && error.status === 409) {
+          setJoinError('정원이 가득 찼습니다.')
+          setJoinState('error')
+          return
+        }
+        if (error instanceof ApiError && error.status === 403) {
+          setJoinError('잘못된 접근입니다. 다시 시도해 주세요.')
+          setJoinState('error')
+          return
+        }
+        if (
+          !(
+            error instanceof ApiError &&
+            (error.status === 404 || error.status === 400)
+          )
+        ) {
+          throw error
+        }
+      }
+
+      const result = await participateMeeting(normalizedInviteCode)
+      const detail = await request<MeetingForQuickRouteResponse>(
+        `/api/v1/meetings/${result.meetingId}`,
+      )
+      if (detail.quickMeeting) {
+        if (!detail.inviteCode) {
+          setJoinError('퀵 모임 초대코드를 확인할 수 없어요.')
+          setJoinState('error')
+          return
+        }
+        navigate(`/quick/${detail.inviteCode}`)
+        return
+      }
       navigate(`/meetings/${result.meetingId}`)
     } catch (error) {
       const message =
