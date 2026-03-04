@@ -29,14 +29,7 @@ export type QuickMeetingDetailResponse = {
 
 export type QuickMeetingEnterResponse = {
   meetingId: number
-  inviteCode: string
-  locationAddress: string
-  participantCount: number
-  targetHeadcount: number
   voteDeadlineAt: string
-  currentVoteId: number | null
-  voteStatus: QuickVoteStatus
-  hostMemberId?: number | null
   guestUuid?: string | null
 }
 

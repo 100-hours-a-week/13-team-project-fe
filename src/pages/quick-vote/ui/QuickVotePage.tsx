@@ -271,16 +271,18 @@ export function QuickVotePage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={() => navigate(`/quick/${inviteCode}`)}
-          aria-label="퀵모임 상세로 돌아가기"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        {!submitted ? (
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate(`/quick/${inviteCode}`)}
+            aria-label="퀵모임 상세로 돌아가기"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        ) : null}
         <div className={styles.progressWrapper}>
           <div className={styles.progressText}>
             {votedCount}/{totalCount}

@@ -1,4 +1,4 @@
-import type { QuickMeetingEnterResponse } from '@/entities/quick-meeting'
+import type { QuickMeetingDetailResponse } from '@/entities/quick-meeting'
 
 export type QuickSession = {
   meetingId: number
@@ -8,7 +8,7 @@ export type QuickSession = {
   targetHeadcount: number
   voteDeadlineAt: string
   currentVoteId: number | null
-  voteStatus: QuickMeetingEnterResponse['voteStatus']
+  voteStatus: QuickMeetingDetailResponse['voteStatus']
   hostMemberId?: number | null
 }
 
