@@ -53,6 +53,10 @@ export function SettlementMenuSelectionPage() {
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
 
   const toggleSelect = (itemId: number) => {
+    if (confirmNoMeal) {
+      setConfirmNoMeal(false)
+    }
+    setError(null)
     setSelectedIds((prev) => {
       if (prev.includes(itemId)) return prev.filter((id) => id !== itemId)
       return [...prev, itemId]
@@ -112,6 +116,7 @@ export function SettlementMenuSelectionPage() {
             <input
               type="checkbox"
               checked={confirmNoMeal}
+              disabled={selectedIds.length > 0}
               onChange={(event) => {
                 setConfirmNoMeal(event.target.checked)
                 setError(null)

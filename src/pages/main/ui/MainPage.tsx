@@ -145,7 +145,12 @@ export function MainPage() {
           setJoinState('error')
           return
         }
-        if (!(error instanceof ApiError && error.status === 404)) {
+        if (
+          !(
+            error instanceof ApiError &&
+            (error.status === 404 || error.status === 400)
+          )
+        ) {
           throw error
         }
       }
