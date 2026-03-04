@@ -59,7 +59,13 @@ export type SettlementItemsResponse = {
 export type SettlementOpenSelectionRequest = {
   totalAmount: number
   discountAmount: number
-  items: SettlementItem[]
+  items: Array<{
+    itemId?: number
+    name: string
+    unitPrice: number
+    quantity: number
+    totalPrice: number
+  }>
 }
 
 export type SettlementSelectionResponse = {

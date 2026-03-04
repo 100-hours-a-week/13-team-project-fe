@@ -135,9 +135,13 @@ export function MeetingFinalPage() {
       <button
         type="button"
         className={styles.secondaryButton}
-        onClick={() => navigate(`/meetings/${parsedMeetingId}/reviews`)}
+        onClick={() =>
+          data?.myReviewId
+            ? navigate(`/reviews/${data.myReviewId}`)
+            : navigate(`/meetings/${parsedMeetingId}/reviews`)
+        }
       >
-        리뷰 작성하기
+        {data?.myReviewId ? '리뷰 보러가기' : '리뷰 작성하기'}
       </button>
     </div>
   )

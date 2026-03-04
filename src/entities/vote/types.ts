@@ -62,6 +62,7 @@ export type FinalSelectionRequest = {
 export type FinalSelectionResponse = {
   candidateId: number
   restaurantId: number
+  myReviewId: number | null
   restaurantName: string
   imageUrl1: string | null
   imageUrl2: string | null
