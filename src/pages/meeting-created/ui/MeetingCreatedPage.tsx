@@ -21,6 +21,7 @@ export function MeetingCreatedPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [copiedText, setCopiedText] = useState<string | null>(null)
+  const [movingDetail, setMovingDetail] = useState(false)
 
   const inviteLink = useMemo(() => {
     if (!inviteCode) return ''
@@ -115,12 +116,14 @@ export function MeetingCreatedPage() {
   )
 
   const handleMoveToDetail = useCallback(async () => {
+    if (movingDetail) return
     if (!meetingId) {
       setMessage('모임 정보를 찾을 수 없습니다.')
       return
     }
 
     try {
+      setMovingDetail(true)
       const detail =
         meetingRoute ?? (await request<MeetingRouteResponse>(`/api/v1/meetings/${meetingId}`))
 
@@ -135,8 +138,9 @@ export function MeetingCreatedPage() {
       navigate(`/meetings/${meetingId}`)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '모임 상세로 이동하지 못했습니다.')
+      setMovingDetail(false)
     }
-  }, [meetingId, meetingRoute])
+  }, [meetingId, meetingRoute, movingDetail])
 
   return (
     <div className={styles.page}>
@@ -202,8 +206,9 @@ export function MeetingCreatedPage() {
                 onClick={() => {
                   void handleMoveToDetail()
                 }}
+                disabled={movingDetail}
               >
-                모임 상세로 이동
+                {movingDetail ? '이동 중...' : '모임 상세로 이동'}
               </button>
             </div>
           </>

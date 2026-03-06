@@ -20,6 +20,33 @@
   color: var(--muted);
 }
 
+.loadingRow {
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 24, 39, 0.2);
+  border-top-color: #111827;
+  animation: spin 0.9s linear infinite;
+}
+
+.dots::after {
+  content: '';
+  display: inline-block;
+  width: 1.4em;
+  text-align: left;
+  vertical-align: bottom;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
 .card {
   display: flex;
   justify-content: space-between;
@@ -32,6 +59,10 @@
 
 .card strong {
   font-size: 18px;
+}
+
+.countValue {
+  animation: fadeInValue 0.2s ease;
 }
 
 .note {
@@ -50,4 +81,49 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+  100% {
+    content: '';
+  }
+}
+
+@keyframes fadeInValue {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .dots::after,
+  .countValue {
+    animation: none;
+  }
+
+  .dots::after {
+    content: '...';
+  }
 }

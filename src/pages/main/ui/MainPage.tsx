@@ -47,6 +47,8 @@ export function MainPage() {
   const [nextCursor, setNextCursor] = useState<number | null>(null)
   const [hasNext, setHasNext] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
+  const [navigatingMeetingId, setNavigatingMeetingId] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -105,6 +107,7 @@ export function MainPage() {
   }
 
   const handleJoinConfirm = async () => {
+    if (isNavigating) return
     if (!inviteCode.trim()) {
       setJoinError('초대 코드를 입력해주세요.')
       return
@@ -112,6 +115,8 @@ export function MainPage() {
     const normalizedInviteCode = inviteCode.trim().toUpperCase()
     setJoinState('loading')
     setJoinError(null)
+    setIsNavigating(true)
+    setNavigatingMeetingId(null)
     try {
       await initCsrfToken()
       const storedGuestUuid = getQuickGuestUuid(normalizedInviteCode)
@@ -174,6 +179,7 @@ export function MainPage() {
         error instanceof Error ? error.message : '모임 참여에 실패했어요.'
       setJoinError(message)
       setJoinState('error')
+      setIsNavigating(false)
     }
   }
 
@@ -194,6 +200,9 @@ export function MainPage() {
   }
 
   const handleMeetingClick = async (meeting: (typeof meetings)[number]) => {
+    if (isNavigating) return
+    setIsNavigating(true)
+    setNavigatingMeetingId(meeting.meetingId)
     if (!meeting.quickMeeting) {
       navigate(`/meetings/${meeting.meetingId}`)
       return
@@ -212,6 +221,8 @@ export function MainPage() {
       const message =
         error instanceof Error ? error.message : '퀵 모임으로 이동하지 못했어요.'
       setMeetingsError(message)
+      setIsNavigating(false)
+      setNavigatingMeetingId(null)
     }
   }
 
@@ -233,6 +244,7 @@ export function MainPage() {
               type="button"
               className={styles.actionCard}
               onClick={() => navigate('/meetings/new')}
+              disabled={isNavigating}
             >
               <div className={styles.actionIconBox}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -251,6 +263,7 @@ export function MainPage() {
               type="button"
               className={styles.actionCard}
               onClick={handleJoinOpen}
+              disabled={isNavigating}
             >
               <div className={styles.actionIconBox}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -292,6 +305,7 @@ export function MainPage() {
                     onClick={() => {
                       void handleMeetingClick(meeting)
                     }}
+                    disabled={isNavigating}
                   >
                     <div className={styles.meetingHeader}>
                       <span className={styles.meetingTitle}>{meeting.title}</span>
@@ -328,6 +342,9 @@ export function MainPage() {
                       </span>
                       <span>{meetingStatusLabel(meeting.meetingStatus)}</span>
                     </div>
+                    {navigatingMeetingId === meeting.meetingId ? (
+                      <span className={styles.meetingLoading}>이동 중...</span>
+                    ) : null}
                   </button>
                 ))}
                 {hasNext && (
@@ -392,6 +409,7 @@ export function MainPage() {
           </div>
         </div>
       ) : null}
+      {isNavigating ? <div className={styles.routeLoading}>페이지 이동 중...</div> : null}
     </div>
   )
 }
