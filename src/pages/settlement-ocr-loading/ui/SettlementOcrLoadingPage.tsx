@@ -44,6 +44,13 @@ export function SettlementOcrLoadingPage() {
       <header className={styles.header}>
         <h1 className={styles.title}>OCR 진행 중</h1>
       </header>
+      <div className={styles.loadingRow} aria-live="polite">
+        <span className={styles.spinner} aria-hidden="true" />
+        <span>
+          영수증 인식 중
+          <span className={styles.dots} aria-hidden="true" />
+        </span>
+      </div>
       <p className={styles.description}>영수증 인식이 끝나면 다음 단계로 자동 이동해요.</p>
       {hasInvalidMeetingId && <p className={styles.note}>모임 정보를 찾을 수 없어요.</p>}
       {error && <p className={styles.note}>{error}</p>}

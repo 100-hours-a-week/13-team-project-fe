@@ -71,6 +71,21 @@
   word-break: break-word;
 }
 
+.statusValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlineSpinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 24, 39, 0.2);
+  border-top-color: #111827;
+  animation: spin 0.9s linear infinite;
+}
+
 .actions {
   margin-top: 8px;
   display: grid;
@@ -88,9 +103,35 @@
 .primaryButton {
   background: var(--accent);
   color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .secondaryButton {
   background: #f6f7fb;
   color: var(--muted);
+}
+
+.buttonSpinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inlineSpinner,
+  .buttonSpinner {
+    animation: none;
+  }
 }

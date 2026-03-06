@@ -26,7 +26,14 @@ export type VoteSubmitRequest = {
   items: VoteSubmitItem[]
 }
 
-export type VoteStatus = 'COUNTING' | 'COUNTED' | 'IN_PROGRESS' | 'COMPLETED' | 'READY' | 'UNKNOWN'
+export type VoteStatus =
+  | 'COUNTING'
+  | 'COUNTED'
+  | 'IN_PROGRESS'
+  | 'OPEN'
+  | 'COMPLETED'
+  | 'READY'
+  | 'UNKNOWN'
 
 export type VoteStatusResponse = {
   voteStatus: VoteStatus

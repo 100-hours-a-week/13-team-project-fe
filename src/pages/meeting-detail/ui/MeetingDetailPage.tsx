@@ -169,11 +169,7 @@ export function MeetingDetailPage() {
             'notifiedVoteIds',
             JSON.stringify(Array.from(notifiedVoteIdsRef.current)),
           )
-          setModalMessage(
-            prev?.currentVoteId
-              ? '재투표가 시작되었어요. 다시 참여해 주세요!'
-              : '투표가 시작되었어요. 지금 참여해 주세요!',
-          )
+          setModalMessage('투표가 시작되었어요. 지금 참여해 주세요!')
         }
       }
 
