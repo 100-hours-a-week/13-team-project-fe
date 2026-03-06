@@ -56,7 +56,7 @@ type FormState = {
 type Errors = Partial<Record<keyof FormState, string>>
 
 // eslint-disable-next-line no-useless-escape
-const TITLE_REGEX = /^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9\s\-_.!,?()\[\]]{2,20}$/
+const TITLE_REGEX = /^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9 \-_.!,?()\[\]]{2,20}$/
 
 const ALLOWED_BOUNDS = {
   sw: { lat: 37.371637, lng: 127.094743 },

@@ -84,7 +84,7 @@ export function VoteCreatePage() {
 
       if (nextStatus === 'FAILED') {
         setStatus('error')
-        setError('투표 생성에 실패했습니다. 검색 반경을 넓혀 다시 시도해주세요.')
+        setError('추천 가능한 식당이 없습니다. 비선호 카테고리를 줄여 다시 시도해 주세요.')
         stopPolling()
         return
       }
