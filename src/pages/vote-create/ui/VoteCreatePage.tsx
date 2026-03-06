@@ -137,8 +137,14 @@ export function VoteCreatePage() {
       <section className={styles.card}>
         {status === 'loading' && (
           <div className={styles.state}>
-            <p className={styles.stateTitle}>투표를 생성하고 있어요.</p>
-            <p className={styles.stateText}>잠시만 기다려주세요.</p>
+            <p className={styles.stateTitle}>
+              <span className={styles.spinner} aria-hidden="true" />
+              투표를 생성하고 있어요.
+            </p>
+            <p className={styles.stateText}>
+              잠시만 기다려주세요
+              <span className={styles.dots} aria-hidden="true" />
+            </p>
           </div>
         )}
 

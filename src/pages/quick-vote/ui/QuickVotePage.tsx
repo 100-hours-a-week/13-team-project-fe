@@ -299,8 +299,13 @@ export function QuickVotePage() {
 
       {submitted ? (
         <section className={styles.waitCard}>
-          <p>투표를 제출했어요. 집계가 끝나면 결과로 이동합니다.</p>
-          <p>{status ? `${status.submittedCount}/${status.totalCount}명 제출` : '제출 현황 확인 중...'}</p>
+          <p className={styles.waitStatus}>
+            <span className={styles.spinner} aria-hidden="true" />
+            {status ? `${status.submittedCount}/${status.totalCount}명 제출` : '제출 현황 확인 중'}
+            <span className={styles.dotsTight} aria-hidden="true" />
+          </p>
+          <p className={styles.waitTitle}>투표를 제출했어요.</p>
+          <p className={styles.waitDescription}>투표 결과가 나오면 결과 화면으로 이동합니다.</p>
         </section>
       ) : null}
 

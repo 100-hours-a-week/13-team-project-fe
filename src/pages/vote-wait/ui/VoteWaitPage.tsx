@@ -66,19 +66,20 @@ export function VoteWaitPage() {
       {error && <p className={styles.note}>{error}</p>}
 
       {!loading && !error && (
-        <section className={styles.statusCard}>
-          <div className={styles.counts}>
-            <span className={styles.countLabel}>현재 투표</span>
-            <strong className={styles.countValue}>
-              {submittedCount}/{totalCount}
-            </strong>
-          </div>
-          {status?.voteStatus === 'COUNTING' && (
-            <p className={styles.countingText}>결과를 집계 중이에요...</p>
-          )}
-          <p className={styles.helperText}>
-            모든 인원이 투표를 완료하면 결과 화면으로 이동해요.
+        <section className={styles.waitCard}>
+          <p className={styles.waitStatus} key={`${submittedCount}-${totalCount}`}>
+            <span className={styles.spinner} aria-hidden="true" />
+            {submittedCount}/{totalCount}명 제출
+            <span className={styles.dotsTight} aria-hidden="true" />
           </p>
+          <p className={styles.waitTitle}>투표를 제출했어요.</p>
+          <p className={styles.waitDescription}>투표 결과가 나오면 결과 화면으로 이동합니다.</p>
+          {status?.voteStatus === 'COUNTING' ? (
+            <p className={styles.waitSubStatus}>
+              결과를 집계 중이에요
+              <span className={styles.dots} aria-hidden="true" />
+            </p>
+          ) : null}
         </section>
       )}
 

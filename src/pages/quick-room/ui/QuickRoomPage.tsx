@@ -284,7 +284,12 @@ export function QuickRoomPage() {
           </div>
           <div className={styles.row}>
             <span>투표 상태</span>
-            <strong>{statusLabel[session.voteStatus] ?? '준비 중'}</strong>
+            <strong className={styles.statusValue}>
+              {statusLabel[session.voteStatus] ?? '준비 중'}
+              {session.voteStatus !== 'OPEN' && session.voteStatus !== 'COUNTED' ? (
+                <span className={styles.inlineSpinner} aria-hidden="true" />
+              ) : null}
+            </strong>
           </div>
 
           <div className={styles.actions}>
@@ -294,6 +299,10 @@ export function QuickRoomPage() {
               onClick={buttonConfig.onClick}
               disabled={buttonConfig.disabled}
             >
+              {buttonConfig.disabled &&
+              (buttonConfig.label === '투표 준비중' || buttonConfig.label === '결과 집계 중') ? (
+                <span className={styles.buttonSpinner} aria-hidden="true" />
+              ) : null}
               {buttonConfig.label}
             </button>
           </div>

@@ -173,6 +173,12 @@ export function SettlementResultPage() {
     setConfirmTarget(participant)
   }
 
+  const handleMoveMeetingDetail = () => {
+    if (!Number.isFinite(parsedMeetingId) || busyAction) return
+    setBusyAction('move')
+    navigate(`/meetings/${parsedMeetingId}`)
+  }
+
   return (
     <div className={styles.page} data-page-id="settlement-result">
       <header className={styles.header}>
@@ -224,7 +230,7 @@ export function SettlementResultPage() {
                 onClick={handleRemind}
                 disabled={busyAction !== null}
               >
-                미송금자 알림 보내기
+                {busyAction === 'remind' ? '알림 전송 중...' : '미송금자 알림 보내기'}
               </button>
               <button
                 type="button"
@@ -232,15 +238,15 @@ export function SettlementResultPage() {
                 onClick={handleComplete}
                 disabled={busyAction !== null}
               >
-                정산 완료
+                {busyAction === 'complete' ? '완료 처리 중...' : '정산 완료'}
               </button>
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+                onClick={handleMoveMeetingDetail}
                 disabled={busyAction !== null}
               >
-                모임 상세로 이동
+                {busyAction === 'move' ? '이동 중...' : '모임 상세로 이동'}
               </button>
             </div>
           ) : (
@@ -251,15 +257,15 @@ export function SettlementResultPage() {
                 onClick={handleRequestMyPayment}
                 disabled={busyAction !== null || myParticipant?.paymentStatus !== 'UNPAID'}
               >
-                송금 확인 요청
+                {busyAction === 'request' ? '요청 중...' : '송금 확인 요청'}
               </button>
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={() => navigate(`/meetings/${parsedMeetingId}`)}
+                onClick={handleMoveMeetingDetail}
                 disabled={busyAction !== null}
               >
-                모임 상세로 이동
+                {busyAction === 'move' ? '이동 중...' : '모임 상세로 이동'}
               </button>
             </div>
           )}

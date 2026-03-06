@@ -48,10 +48,17 @@ export function SettlementWaitingPage() {
       <header className={styles.header}>
         <h1 className={styles.title}>정산 집계 중</h1>
       </header>
+      <div className={styles.loadingRow} aria-live="polite">
+        <span className={styles.spinner} aria-hidden="true" />
+        <span>
+          정산 계산 상태 확인 중
+          <span className={styles.dots} aria-hidden="true" />
+        </span>
+      </div>
       <p className={styles.description}>모든 참여자의 정산 계산 요청을 기다리고 있어요.</p>
       <section className={styles.card}>
         <span>확정 인원</span>
-        <strong>
+        <strong key={`${confirmedCount}-${totalCount}`} className={styles.countValue}>
           {confirmedCount}/{totalCount}
         </strong>
       </section>

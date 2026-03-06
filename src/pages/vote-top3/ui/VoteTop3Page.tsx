@@ -202,7 +202,7 @@ export function VoteTop3Page() {
             onClick={handleReRecommend}
             disabled={recoState === 'loading'}
           >
-            재추천 받기
+            {recoState === 'loading' ? '재추천 중...' : '재추천 받기'}
           </button>
           <button
             type="button"
@@ -210,7 +210,7 @@ export function VoteTop3Page() {
             onClick={handleFinalize}
             disabled={!selectedId || finalState === 'loading'}
           >
-            최종 선택 확정
+            {finalState === 'loading' ? '확정 중...' : '최종 선택 확정'}
           </button>
         </div>
       )}

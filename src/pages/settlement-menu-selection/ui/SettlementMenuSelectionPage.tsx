@@ -131,7 +131,7 @@ export function SettlementMenuSelectionPage() {
             onClick={handleConfirm}
             disabled={submitting}
           >
-            정산 계산 요청
+            {submitting ? '요청 중...' : '정산 계산 요청'}
           </button>
           <button
             type="button"
