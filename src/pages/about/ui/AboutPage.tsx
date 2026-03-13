@@ -231,15 +231,15 @@ export function AboutPage() {
         <h2 className={s.sectionTitle}>이런 분들을 위해 만들었어요</h2>
         <div className={s.tags}>
           <div className={s.tag}>
-            <Icon d={icons.briefcase} size={22} />
+            <Icon d={icons.briefcase} size={22} className={s.tagSvg} />
             직장 동료와 점심을 함께하는 분
           </div>
           <div className={s.tag}>
-            <Icon d={icons.heart} size={22} />
+            <Icon d={icons.heart} size={22} className={s.tagSvg} />
             친구, 연인, 가족과 외식하는 분
           </div>
           <div className={s.tag}>
-            <Icon d={icons.flag} size={22} />
+            <Icon d={icons.flag} size={22} className={s.tagSvg} />
             모임을 자주 주선하는 분
           </div>
         </div>

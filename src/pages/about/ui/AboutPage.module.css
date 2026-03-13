@@ -264,6 +264,12 @@
   flex-shrink: 0;
 }
 
+.tagSvg {
+  display: block;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
 /* ── Status section ── */
 .statusGrid {
   display: grid;
