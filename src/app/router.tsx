@@ -1,45 +1,44 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@/app/providers/auth-context'
 import { type MemberStatus } from '@/shared/lib/api'
 import { navigate } from '@/shared/lib/navigation'
-
-const AboutPage = lazy(() => import('@/pages/about').then((m) => ({ default: m.AboutPage })))
-const LandingPage = lazy(() => import('@/pages/landing').then((m) => ({ default: m.LandingPage })))
-const TermsPage = lazy(() => import('@/pages/terms').then((m) => ({ default: m.TermsPage })))
-const PreferencesPage = lazy(() => import('@/pages/preferences').then((m) => ({ default: m.PreferencesPage })))
-const MainTempPage = lazy(() => import('@/pages/main-temp').then((m) => ({ default: m.MainTempPage })))
-const MainPage = lazy(() => import('@/pages/main').then((m) => ({ default: m.MainPage })))
-const MyPage = lazy(() => import('@/pages/mypage').then((m) => ({ default: m.MyPage })))
-const BlockedPage = lazy(() => import('@/pages/blocked').then((m) => ({ default: m.BlockedPage })))
-const EventPage = lazy(() => import('@/pages/event').then((m) => ({ default: m.EventPage })))
-const RankingPage = lazy(() => import('@/pages/ranking').then((m) => ({ default: m.RankingPage })))
-const NotificationPage = lazy(() => import('@/pages/notification').then((m) => ({ default: m.NotificationPage })))
-const MeetingDetailPage = lazy(() => import('@/pages/meeting-detail').then((m) => ({ default: m.MeetingDetailPage })))
-const MeetingChatPage = lazy(() => import('@/pages/meeting-chat').then((m) => ({ default: m.MeetingChatPage })))
-const MeetingCreatedPage = lazy(() => import('@/pages/meeting-created').then((m) => ({ default: m.MeetingCreatedPage })))
-const MeetingCreatePage = lazy(() => import('@/pages/meeting-create').then((m) => ({ default: m.MeetingCreatePage })))
-const MeetingJoinPage = lazy(() => import('@/pages/meeting-join').then((m) => ({ default: m.MeetingJoinPage })))
-const MeetingEditPage = lazy(() => import('@/pages/meeting-edit').then((m) => ({ default: m.MeetingEditPage })))
-const MeetingFinalPage = lazy(() => import('@/pages/meeting-final').then((m) => ({ default: m.MeetingFinalPage })))
-const VoteCreatePage = lazy(() => import('@/pages/vote-create').then((m) => ({ default: m.VoteCreatePage })))
-const VotePage = lazy(() => import('@/pages/vote').then((m) => ({ default: m.VotePage })))
-const VoteTop3Page = lazy(() => import('@/pages/vote-top3').then((m) => ({ default: m.VoteTop3Page })))
-const VoteWaitPage = lazy(() => import('@/pages/vote-wait').then((m) => ({ default: m.VoteWaitPage })))
-const SettlementReceiptUploadPage = lazy(() => import('@/pages/settlement-receipt-upload').then((m) => ({ default: m.SettlementReceiptUploadPage })))
-const SettlementOcrLoadingPage = lazy(() => import('@/pages/settlement-ocr-loading').then((m) => ({ default: m.SettlementOcrLoadingPage })))
-const SettlementOcrFailedPage = lazy(() => import('@/pages/settlement-ocr-failed').then((m) => ({ default: m.SettlementOcrFailedPage })))
-const SettlementOcrEditPage = lazy(() => import('@/pages/settlement-ocr-edit').then((m) => ({ default: m.SettlementOcrEditPage })))
-const SettlementMenuSelectionPage = lazy(() => import('@/pages/settlement-menu-selection').then((m) => ({ default: m.SettlementMenuSelectionPage })))
-const SettlementWaitingPage = lazy(() => import('@/pages/settlement-waiting').then((m) => ({ default: m.SettlementWaitingPage })))
-const SettlementResultPage = lazy(() => import('@/pages/settlement-result').then((m) => ({ default: m.SettlementResultPage })))
-const SettlementCompletedPage = lazy(() => import('@/pages/settlement-completed').then((m) => ({ default: m.SettlementCompletedPage })))
-const ReviewCreatePage = lazy(() => import('@/pages/review-create').then((m) => ({ default: m.ReviewCreatePage })))
-const ReviewDetailPage = lazy(() => import('@/pages/review-detail').then((m) => ({ default: m.ReviewDetailPage })))
-const QuickEnterPage = lazy(() => import('@/pages/quick-enter').then((m) => ({ default: m.QuickEnterPage })))
-const QuickRoomPage = lazy(() => import('@/pages/quick-room').then((m) => ({ default: m.QuickRoomPage })))
-const QuickVotePage = lazy(() => import('@/pages/quick-vote').then((m) => ({ default: m.QuickVotePage })))
-const QuickResultPage = lazy(() => import('@/pages/quick-result').then((m) => ({ default: m.QuickResultPage })))
+import { LandingPage } from '@/pages/landing'
+import { TermsPage } from '@/pages/terms'
+import { PreferencesPage } from '@/pages/preferences'
+import { MainTempPage } from '@/pages/main-temp'
+import { MainPage } from '@/pages/main'
+import { MyPage } from '@/pages/mypage'
+import { BlockedPage } from '@/pages/blocked'
+import { EventPage } from '@/pages/event'
+import { RankingPage } from '@/pages/ranking'
+import { NotificationPage } from '@/pages/notification'
+import { MeetingDetailPage } from '@/pages/meeting-detail'
+import { MeetingChatPage } from '@/pages/meeting-chat'
+import { MeetingCreatedPage } from '@/pages/meeting-created'
+import { MeetingCreatePage } from '@/pages/meeting-create'
+import { MeetingJoinPage } from '@/pages/meeting-join'
+import { MeetingEditPage } from '@/pages/meeting-edit'
+import { MeetingFinalPage } from '@/pages/meeting-final'
+import { VoteCreatePage } from '@/pages/vote-create'
+import { VotePage } from '@/pages/vote'
+import { VoteTop3Page } from '@/pages/vote-top3'
+import { VoteWaitPage } from '@/pages/vote-wait'
+import { SettlementReceiptUploadPage } from '@/pages/settlement-receipt-upload'
+import { SettlementOcrLoadingPage } from '@/pages/settlement-ocr-loading'
+import { SettlementOcrFailedPage } from '@/pages/settlement-ocr-failed'
+import { SettlementOcrEditPage } from '@/pages/settlement-ocr-edit'
+import { SettlementMenuSelectionPage } from '@/pages/settlement-menu-selection'
+import { SettlementWaitingPage } from '@/pages/settlement-waiting'
+import { SettlementResultPage } from '@/pages/settlement-result'
+import { SettlementCompletedPage } from '@/pages/settlement-completed'
+import { ReviewCreatePage } from '@/pages/review-create'
+import { ReviewDetailPage } from '@/pages/review-detail'
+import { QuickEnterPage } from '@/pages/quick-enter'
+import { QuickRoomPage } from '@/pages/quick-room'
+import { QuickVotePage } from '@/pages/quick-vote'
+import { QuickResultPage } from '@/pages/quick-result'
+import { AboutPage } from '@/pages/about'
 
 const statusRoute: Record<MemberStatus, string> = {
   PENDING: '/terms',
@@ -130,13 +129,7 @@ export function AppRouter() {
     navigate(redirectPath, { replace: true })
   }, [loading, member, pathname, status])
 
-  if (pathname === '/about') {
-    return (
-      <Suspense fallback={null}>
-        <AboutPage />
-      </Suspense>
-    )
-  }
+  if (pathname === '/about') return <AboutPage />
 
   if (loading) return <LoadingScreen />
 
@@ -157,7 +150,6 @@ export function AppRouter() {
   }
 
   return (
-    <Suspense fallback={<LoadingScreen />}>
     <Routes>
       <Route path="/about" element={<AboutPage />} />
       <Route path="/" element={<LandingPage />} />
@@ -215,6 +207,5 @@ export function AppRouter() {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
-    </Suspense>
   )
 }
