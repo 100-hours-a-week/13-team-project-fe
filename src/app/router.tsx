@@ -38,6 +38,7 @@ import { QuickEnterPage } from '@/pages/quick-enter'
 import { QuickRoomPage } from '@/pages/quick-room'
 import { QuickVotePage } from '@/pages/quick-vote'
 import { QuickResultPage } from '@/pages/quick-result'
+import { AboutPage } from '@/pages/about'
 
 const statusRoute: Record<MemberStatus, string> = {
   PENDING: '/terms',
@@ -46,7 +47,7 @@ const statusRoute: Record<MemberStatus, string> = {
   DELETED: '/blocked',
 }
 
-const publicPaths = new Set(['/', '/terms', '/preferences', '/meetings/join'])
+const publicPaths = new Set(['/', '/terms', '/preferences', '/meetings/join', '/about'])
 const publicPathPrefixes = ['/quick']
 
 function isPublicPath(pathname: string) {
@@ -128,6 +129,8 @@ export function AppRouter() {
     navigate(redirectPath, { replace: true })
   }, [loading, member, pathname, status])
 
+  if (pathname === '/about') return <AboutPage />
+
   if (loading) return <LoadingScreen />
 
   if (!member && !isPublicPath(pathname)) {
@@ -148,6 +151,7 @@ export function AppRouter() {
 
   return (
     <Routes>
+      <Route path="/about" element={<AboutPage />} />
       <Route path="/" element={<LandingPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/preferences" element={<PreferencesPage />} />
