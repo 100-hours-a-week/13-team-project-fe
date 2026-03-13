@@ -1,0 +1,425 @@
+/* ── Full-bleed wrapper: escapes .appShell max-width: 480px ── */
+.page {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+/* ── Nav (sticky) ── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+
+.navLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--brand);
+  transition: background 0.2s, color 0.2s;
+}
+
+.navLink:hover {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+/* ── Content wrapper ── */
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 80px 24px 64px;
+  text-align: center;
+  background: linear-gradient(
+    165deg,
+    #f5f7e8 0%,
+    #fefef9 40%,
+    #ffffff 100%
+  );
+}
+
+.heroInner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0 0 12px;
+  letter-spacing: -1px;
+}
+
+.heroTagline {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+
+.heroDesc {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0 0 36px;
+  line-height: 1.7;
+}
+
+.heroCta {
+  display: inline-block;
+  padding: 14px 36px;
+  background: var(--brand);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.heroCta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(187, 203, 100, 0.35);
+}
+
+/* ── Section common ── */
+.section {
+  padding: 72px 24px;
+}
+
+.sectionAlt {
+  padding: 72px 24px;
+  background: #fafaf6;
+}
+
+.sectionTitle {
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 48px;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+
+/* ── Card grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.cardIcon {
+  margin: 0 auto 16px;
+  display: block;
+  color: var(--brand);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.cardDesc {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Flow steps ── */
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 24px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  width: 100%;
+  max-width: 320px;
+}
+
+.stepIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f2f5e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+  margin-bottom: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stepSvg {
+  display: block;
+  color: inherit;
+}
+
+.stepArrow {
+  color: var(--muted);
+  transform: rotate(90deg);
+  line-height: 0;
+}
+
+.stepTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Tags list (대상 사용자) ── */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background: #ffffff;
+  border: 1px solid var(--stroke);
+  border-radius: 40px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tagIcon {
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+.tagSvg {
+  display: block;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+
+/* ── Status section ── */
+.statusGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+
+.statusText {
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ── Footer ── */
+.footer {
+  padding: 48px 24px 32px;
+  background: var(--ink);
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.footerLinks {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.footerLink {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footerLink:hover {
+  color: #ffffff;
+}
+
+.footerEmail {
+  font-size: 14px;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footerCopy {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0;
+}
+
+/* ── Responsive: 768px+ ── */
+@media (min-width: 768px) {
+  .nav {
+    padding: 16px 40px;
+  }
+
+  .hero {
+    padding: 120px 40px 96px;
+  }
+
+  .heroTitle {
+    font-size: 52px;
+  }
+
+  .heroTagline {
+    font-size: 26px;
+  }
+
+  .heroDesc {
+    font-size: 18px;
+  }
+
+  .section,
+  .sectionAlt {
+    padding: 96px 40px;
+  }
+
+  .sectionTitle {
+    font-size: 30px;
+    margin-bottom: 56px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .flow {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step {
+    flex: 1;
+    max-width: none;
+  }
+
+  .stepArrow {
+    transform: none;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+
+  .statusGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card {
+    padding: 36px 28px;
+  }
+}
+
+/* ── Responsive: 1024px+ ── */
+@media (min-width: 1024px) {
+  .hero {
+    padding: 140px 40px 112px;
+  }
+
+  .heroTitle {
+    font-size: 60px;
+  }
+
+  .heroTagline {
+    font-size: 28px;
+  }
+
+  .stepArrow {
+    padding: 0 8px;
+  }
+}
