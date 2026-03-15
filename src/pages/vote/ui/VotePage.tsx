@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './VotePage.module.css'
 import {
@@ -8,6 +15,14 @@ import {
   type VoteChoice,
   type VoteSubmitItem,
 } from '@/entities/vote'
+import {
+  askRagChat,
+  clearRagChatHistory,
+  getRagChatHistory,
+  type RagHistoryMessage,
+  type RagRole,
+} from '@/entities/rag-chat'
+import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 
 type SwipeState = {
@@ -18,12 +33,55 @@ type SwipeState = {
   isDragging: boolean
 }
 
+type RagUiMessage = {
+  key: string
+  role: RagRole
+  content: string
+  createdAt: string
+}
+
 const swipeThreshold = 80
+const chatFallbackError = '지금은 답변이 지연되고 있어요. 잠시 후 다시 시도해주세요.'
+
+function nowIso() {
+  return new Date().toISOString()
+}
+
+function toChatMessage(message: RagHistoryMessage): RagUiMessage {
+  return {
+    key: `history-${message.id}`,
+    role: message.role,
+    content: message.content,
+    createdAt: message.created_at,
+  }
+}
+
+function formatClock(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+function createAssistantGreeting(): RagUiMessage {
+  return {
+    key: `greeting-${Date.now()}`,
+    role: 'assistant',
+    content: '챗봇에게 물어보세요! 주차, 룸, 분위기, 추천 메뉴를 바로 안내해드릴게요.',
+    createdAt: nowIso(),
+  }
+}
 
 export function VotePage() {
   const { meetingId, voteId } = useParams()
+  const { member } = useAuth()
+
   const parsedMeetingId = Number(meetingId)
   const parsedVoteId = Number(voteId)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
@@ -39,7 +97,45 @@ export function VotePage() {
     deltaY: 0,
     isDragging: false,
   })
+
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatSending, setChatSending] = useState(false)
+  const [chatError, setChatError] = useState<string | null>(null)
+  const [chatMessages, setChatMessages] = useState<RagUiMessage[]>([])
+  const [chatHydrated, setChatHydrated] = useState(false)
+
   const pointerIdRef = useRef<number | null>(null)
+  const chatViewportRef = useRef<HTMLDivElement | null>(null)
+  const chatSendGuardRef = useRef(false)
+
+  const ragUserId = useMemo(() => {
+    if (!member?.memberId) return null
+    return `member:${member.memberId}`
+  }, [member?.memberId])
+
+  const currentCandidate = candidates[currentIndex]
+
+  const images = useMemo(() => {
+    if (!currentCandidate) return []
+    const list = [
+      currentCandidate.imageUrl1,
+      currentCandidate.imageUrl2,
+      currentCandidate.imageUrl3,
+    ].filter(Boolean) as string[]
+    return Array.from(new Set(list))
+  }, [currentCandidate])
+
+  const promptLabelBase = currentCandidate?.restaurantName ?? '이 식당'
+  const quickPrompts = useMemo(
+    () => [
+      `${promptLabelBase} 주차 가능한가요?`,
+      `${promptLabelBase} 6명 룸 가능한가요?`,
+      `${promptLabelBase} 분위기 어떤가요?`,
+    ],
+    [promptLabelBase],
+  )
 
   useEffect(() => {
     if (!Number.isFinite(parsedMeetingId) || !Number.isFinite(parsedVoteId)) {
@@ -76,20 +172,68 @@ export function VotePage() {
     }
   }, [parsedMeetingId, parsedVoteId])
 
-  const currentCandidate = candidates[currentIndex]
-  const images = useMemo(() => {
-    if (!currentCandidate) return []
-    const list = [
-      currentCandidate.imageUrl1,
-      currentCandidate.imageUrl2,
-      currentCandidate.imageUrl3,
-    ].filter(Boolean) as string[]
-    return Array.from(new Set(list))
-  }, [currentCandidate])
-
   useEffect(() => {
     setImageIndex(0)
   }, [currentIndex])
+
+  useEffect(() => {
+    setChatHydrated(false)
+    setChatMessages([])
+    setChatError(null)
+  }, [ragUserId])
+
+  useEffect(() => {
+    if (!chatOpen) return
+    const frame = requestAnimationFrame(() => {
+      const viewport = chatViewportRef.current
+      if (!viewport) return
+      viewport.scrollTop = viewport.scrollHeight
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [chatMessages, chatOpen])
+
+  useEffect(() => {
+    if (!chatOpen || chatHydrated) return
+
+    if (!ragUserId) {
+      setChatError('로그인 정보가 없어 챗봇을 사용할 수 없어요.')
+      setChatMessages([createAssistantGreeting()])
+      setChatHydrated(true)
+      return
+    }
+
+    let active = true
+
+    const loadHistory = async () => {
+      try {
+        setChatLoading(true)
+        setChatError(null)
+        const response = await getRagChatHistory(ragUserId, 20)
+        if (!active) return
+
+        const mapped = (response.messages ?? [])
+          .filter((item) => item.role === 'user' || item.role === 'assistant')
+          .map(toChatMessage)
+
+        setChatMessages(mapped.length > 0 ? mapped : [createAssistantGreeting()])
+        setChatHydrated(true)
+      } catch (err) {
+        if (!active) return
+        setChatMessages([createAssistantGreeting()])
+        setChatError(err instanceof Error ? err.message : '대화 기록을 불러오지 못했어요.')
+        setChatHydrated(true)
+      } finally {
+        if (active) {
+          setChatLoading(false)
+        }
+      }
+    }
+
+    void loadHistory()
+    return () => {
+      active = false
+    }
+  }, [chatHydrated, chatOpen, ragUserId])
 
   const totalCount = candidates.length
   const votedCount = choices.length
@@ -191,8 +335,85 @@ export function VotePage() {
     setSwipeState((prev) => ({ ...prev, deltaX: 0, deltaY: 0, isDragging: false }))
   }
 
-  const progressRatio = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
+  const sendRagMessage = useCallback(
+    async (overrideText?: string) => {
+      const content = (overrideText ?? chatInput).trim()
+      if (!content || chatSending) return
+      if (!ragUserId) {
+        setChatError('로그인 정보가 없어 챗봇을 사용할 수 없어요.')
+        return
+      }
+      if (chatSendGuardRef.current) return
 
+      chatSendGuardRef.current = true
+      setChatSending(true)
+      setChatError(null)
+
+      const userMessage: RagUiMessage = {
+        key: `user-${Date.now()}`,
+        role: 'user',
+        content,
+        createdAt: nowIso(),
+      }
+      setChatMessages((prev) => [...prev, userMessage])
+      setChatInput('')
+
+      try {
+        const response = await askRagChat({
+          userId: ragUserId,
+          message: content,
+        })
+
+        const assistantMessage: RagUiMessage = {
+          key: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response.answer?.trim() || chatFallbackError,
+          createdAt: nowIso(),
+        }
+        setChatMessages((prev) => [...prev, assistantMessage])
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : chatFallbackError
+        setChatError(detail)
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            key: `assistant-error-${Date.now()}`,
+            role: 'assistant',
+            content: chatFallbackError,
+            createdAt: nowIso(),
+          },
+        ])
+      } finally {
+        setChatSending(false)
+        chatSendGuardRef.current = false
+      }
+    },
+    [chatInput, chatSending, ragUserId],
+  )
+
+  const handleChatEnter = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
+      return
+    }
+    event.preventDefault()
+    void sendRagMessage()
+  }
+
+  const handleChatReset = async () => {
+    if (!ragUserId || chatLoading) return
+    try {
+      setChatLoading(true)
+      setChatError(null)
+      await clearRagChatHistory(ragUserId)
+      setChatMessages([createAssistantGreeting()])
+    } catch (err) {
+      setChatError(err instanceof Error ? err.message : '대화 초기화에 실패했어요.')
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  const progressRatio = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
   const disableActions = !currentCandidate || submitting || loading
 
   return (
@@ -209,9 +430,7 @@ export function VotePage() {
           </svg>
         </button>
         <div className={styles.progressWrapper}>
-          <div className={styles.progressText}>
-            {votedCount}/{totalCount}
-          </div>
+          <div className={styles.progressText}>투표 진행 {votedCount}/{totalCount}</div>
           <div className={styles.progressBar}>
             <div className={styles.progressFill} style={{ width: `${progressRatio}%` }} />
           </div>
@@ -219,7 +438,7 @@ export function VotePage() {
       </header>
 
       {loading && <p className={styles.note}>후보를 불러오는 중...</p>}
-      {error && <p className={styles.note}>{error}</p>}
+      {error && <p className={styles.noteError}>{error}</p>}
 
       {!loading && !error && currentCandidate && (
         <section className={styles.cardArea}>
@@ -230,9 +449,7 @@ export function VotePage() {
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             style={{
-              transform: `translate(${swipeState.deltaX}px, ${swipeState.deltaY}px) rotate(${
-                swipeState.deltaX * 0.05
-              }deg)`,
+              transform: `translate(${swipeState.deltaX}px, ${swipeState.deltaY}px) rotate(${swipeState.deltaX * 0.05}deg)`,
             }}
           >
             <div className={styles.imageArea}>
@@ -334,10 +551,128 @@ export function VotePage() {
         >
           좋아요
         </button>
-        <button type="button" className={styles.undoButton} onClick={handleUndo} disabled={disableActions}>
+        <button
+          type="button"
+          className={styles.undoButton}
+          onClick={handleUndo}
+          disabled={disableActions}
+        >
           되돌리기
         </button>
       </div>
+
+      <button
+        type="button"
+        className={styles.chatFab}
+        aria-label="챗봇 열기"
+        onClick={() => setChatOpen(true)}
+      >
+        <span className={styles.chatFabIcon}>AI</span>
+        <span className={styles.chatFabLabel}>챗봇</span>
+      </button>
+
+      {chatOpen && (
+        <button
+          type="button"
+          className={styles.chatBackdrop}
+          aria-label="챗봇 닫기"
+          onClick={() => setChatOpen(false)}
+        />
+      )}
+
+      <aside className={`${styles.chatPanel} ${chatOpen ? styles.chatPanelOpen : ''}`}>
+        <header className={styles.chatHeader}>
+          <div>
+            <p className={styles.chatTitle}>스와이프 챗봇</p>
+            <p className={styles.chatSubtitle}>{promptLabelBase} 기준으로 바로 물어보세요.</p>
+          </div>
+          <div className={styles.chatHeaderActions}>
+            <button
+              type="button"
+              className={styles.chatGhostButton}
+              onClick={() => {
+                void handleChatReset()
+              }}
+              disabled={chatLoading}
+            >
+              초기화
+            </button>
+            <button
+              type="button"
+              className={styles.chatCloseButton}
+              onClick={() => setChatOpen(false)}
+              aria-label="챗봇 닫기"
+            >
+              ×
+            </button>
+          </div>
+        </header>
+
+        <div className={styles.promptRow}>
+          {quickPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className={styles.promptChip}
+              onClick={() => {
+                setChatInput(prompt)
+              }}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+
+        {chatError && <p className={styles.chatErrorBanner}>{chatError}</p>}
+
+        <div className={styles.chatViewport} ref={chatViewportRef}>
+          {chatLoading && <p className={styles.chatStateText}>대화 기록을 불러오는 중...</p>}
+          {!chatLoading && chatMessages.length === 0 && (
+            <p className={styles.chatStateText}>메시지를 입력하면 챗봇이 답변해요.</p>
+          )}
+
+          {!chatLoading &&
+            chatMessages.map((message) => (
+              <div
+                key={message.key}
+                className={`${styles.chatRow} ${message.role === 'user' ? styles.chatMine : styles.chatTheirs}`}
+              >
+                <div className={styles.chatBubbleWrap}>
+                  <div
+                    className={`${styles.chatBubble} ${
+                      message.role === 'user' ? styles.chatMineBubble : styles.chatTheirBubble
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                  <span className={styles.chatTime}>{formatClock(message.createdAt)}</span>
+                </div>
+              </div>
+            ))}
+        </div>
+
+        <div className={styles.chatComposer}>
+          <textarea
+            className={styles.chatTextarea}
+            placeholder="메시지를 입력하세요..."
+            value={chatInput}
+            onChange={(event) => setChatInput(event.target.value)}
+            onKeyDown={handleChatEnter}
+            rows={1}
+            disabled={chatSending}
+          />
+          <button
+            type="button"
+            className={styles.chatSendButton}
+            onClick={() => {
+              void sendRagMessage()
+            }}
+            disabled={chatSending || chatInput.trim().length === 0}
+          >
+            {chatSending ? '전송중' : '전송'}
+          </button>
+        </div>
+      </aside>
     </div>
   )
 }
