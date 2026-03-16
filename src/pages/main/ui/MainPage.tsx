@@ -3,6 +3,8 @@ import styles from './MainPage.module.css'
 import { getMyMeetings, participateMeeting } from '@/entities/meeting'
 import { enterQuickMeeting } from '@/entities/quick-meeting'
 import { logout, request, ApiError, initCsrfToken } from '@/shared/lib/api'
+import { deactivateNotificationToken } from '@/entities/notification'
+import { deactivateStoredNotificationToken } from '@/shared/lib/notification/token'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
 import logoImage from '@/assets/logo.png'
@@ -185,6 +187,7 @@ export function MainPage() {
 
   const handleLogout = async () => {
     try {
+      await deactivateStoredNotificationToken(deactivateNotificationToken).catch(() => {})
       await logout()
     } finally {
       setMember(null)
