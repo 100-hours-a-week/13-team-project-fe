@@ -25,3 +25,8 @@ dist-ssr
 .claude
 infra/
 AGENTS.md
+
+# Local docs/notes
+docs/
+Skills/
+retros/

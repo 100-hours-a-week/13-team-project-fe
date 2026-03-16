@@ -9,6 +9,8 @@ import {
   withdrawMember,
   type PreferenceChoice,
 } from '@/shared/lib/api'
+import { deactivateNotificationToken } from '@/entities/notification'
+import { deactivateStoredNotificationToken } from '@/shared/lib/notification/token'
 import { getMyReviews, type ReviewItem } from '@/entities/review'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
@@ -148,6 +150,7 @@ export function MyPage() {
 
   const handleLogout = async () => {
     try {
+      await deactivateStoredNotificationToken(deactivateNotificationToken).catch(() => {})
       await logout()
     } finally {
       setMember(null)
