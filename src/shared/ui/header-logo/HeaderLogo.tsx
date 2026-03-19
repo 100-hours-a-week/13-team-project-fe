@@ -11,7 +11,12 @@ export function HeaderLogo({ label = '모여밥', to = '/main', className }: Hea
   const classes = className ? `${styles.logo} ${className}` : styles.logo
 
   return (
-    <button type="button" className={classes} onClick={() => navigate(to)}>
+    <button
+      type="button"
+      className={classes}
+      onClick={() => navigate(to)}
+      aria-label={`${label} 홈으로 이동`}
+    >
       {label}
     </button>
   )

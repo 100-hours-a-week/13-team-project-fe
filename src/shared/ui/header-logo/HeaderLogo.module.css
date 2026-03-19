@@ -1,21 +1,27 @@
 .logo {
-  border: none;
-  background: transparent;
-  padding: 0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  padding: 8px 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: inherit;
+  color: var(--text-main);
   font-family: inherit;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.logo:hover {
-  opacity: 0.9;
+.logo:enabled:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
 }
 
 .logo:focus-visible {
   outline: 2px solid var(--accent-strong);
-  outline-offset: 4px;
-  border-radius: 8px;
+  outline-offset: 2px;
+  border-radius: var(--radius-full);
 }

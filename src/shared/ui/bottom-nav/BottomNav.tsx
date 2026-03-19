@@ -68,16 +68,16 @@ export function BottomNav() {
   const isHome = pathname === '/main'
 
   return (
-    <nav className={styles.bottomNav}>
+    <nav className={styles.bottomNav} aria-label="하단 메뉴">
       {navItems.map((item) => {
-        const active =
-          item.key === 'home' ? isHome : pathname.startsWith(item.path)
+        const active = item.key === 'home' ? isHome : pathname.startsWith(item.path)
         return (
           <button
             type="button"
             key={item.key}
             className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
             onClick={() => navigate(item.path)}
+            aria-label={`${item.label} 페이지로 이동`}
           >
             <span className={styles.navIcon}>{item.icon}</span>
             <span className={styles.navLabel}>{item.label}</span>

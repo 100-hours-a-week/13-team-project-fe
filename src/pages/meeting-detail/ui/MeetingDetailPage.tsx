@@ -502,7 +502,7 @@ export function MeetingDetailPage() {
             </button>
             <button
               type="button"
-              className={styles.primaryAction}
+              className={styles.settlementAction}
               onClick={() => void handleMoveSettlement()}
               disabled={isRoutingSettlement}
             >
