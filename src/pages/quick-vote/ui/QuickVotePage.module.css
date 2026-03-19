@@ -56,7 +56,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(120deg, #22c55e, #84cc16);
+  background: var(--primary);
   border-radius: 999px;
   transition: width 0.2s ease;
 }
@@ -185,8 +185,8 @@
 .category {
   font-size: 12px;
   padding: 4px 8px;
-  background: #dcfce7;
-  color: #166534;
+  background: var(--primary-light);
+  color: var(--primary-dark);
   border-radius: 999px;
 }
 
@@ -236,8 +236,8 @@
 }
 
 .waitCard {
-  border: 1px solid #d1fae5;
-  background: #f0fdf4;
+  border: 1px solid rgba(255, 107, 43, 0.35);
+  background: var(--primary-light);
   border-radius: 16px;
   padding: 14px 16px;
   display: grid;
@@ -248,7 +248,7 @@
 
 .waitCard p {
   margin: 0;
-  color: #166534;
+  color: var(--primary-dark);
   font-size: 14px;
 }
 
@@ -264,7 +264,7 @@
 }
 
 .waitDescription {
-  color: #3f7a5b;
+  color: var(--muted);
 }
 
 .dotsTight::after {
@@ -280,8 +280,8 @@
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  border: 2px solid rgba(22, 101, 52, 0.2);
-  border-top-color: #166534;
+  border: 2px solid rgba(229, 90, 27, 0.24);
+  border-top-color: var(--primary-dark);
   animation: spin 0.9s linear infinite;
   flex-shrink: 0;
 }

@@ -1,14 +1,20 @@
 .button {
-  border: none;
-  background: var(--surface);
-  width: 36px;
-  height: 36px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
   color: var(--ink);
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.button:enabled:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
 }
 
 .button svg {

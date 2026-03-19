@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  padding: 24px 16px 140px;
+  padding: 20px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -33,9 +33,11 @@
 .badge {
   font-size: 0.8rem;
   color: var(--muted);
-  border: 1px solid rgba(16, 24, 40, 0.18);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 6px 12px;
+  background: #fff;
+  font-weight: 700;
 }
 
 .actions {
@@ -49,22 +51,23 @@
 .moreButton,
 .inlineButton {
   border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-weight: 600;
+  border-radius: var(--radius-full);
+  padding: 10px 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .primaryButton {
-  background: var(--accent-strong);
-  color: #1f2328;
-  border: 1px solid rgba(16, 24, 40, 0.12);
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .secondaryButton,
 .moreButton,
 .inlineButton {
-  background: rgba(15, 23, 42, 0.08);
+  background: var(--primary-light);
   color: var(--text);
 }
 
@@ -87,8 +90,9 @@
   color: var(--muted);
   font-size: 0.95rem;
   padding: 14px;
-  border-radius: 12px;
-  border: 1px dashed rgba(16, 24, 40, 0.24);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(255, 107, 43, 0.36);
+  background: #fff;
 }
 
 .list {
@@ -102,18 +106,19 @@
 
 .itemUnread,
 .itemRead {
-  border-radius: 12px;
-  border: 1px solid rgba(16, 24, 40, 0.12);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
   background: #fff;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: var(--shadow-card);
 }
 
 .itemUnread {
-  border-color: rgba(15, 98, 254, 0.42);
-  background: rgba(15, 98, 254, 0.05);
+  border-color: rgba(255, 107, 43, 0.38);
+  background: var(--primary-light);
 }
 
 .itemHead {

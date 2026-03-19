@@ -7,7 +7,7 @@ import { deactivateNotificationToken } from '@/entities/notification'
 import { deactivateStoredNotificationToken } from '@/shared/lib/notification/token'
 import { useAuth } from '@/app/providers/auth-context'
 import { navigate } from '@/shared/lib/navigation'
-import logoImage from '@/assets/logo.png'
+import logoImage from '@/assets/moyeobab_logo.webp'
 import { BottomNav } from '@/shared/ui/bottom-nav'
 import { getQuickGuestUuid, removeQuickGuestUuid, saveQuickGuestUuid } from '@/shared/lib/quick-session'
 

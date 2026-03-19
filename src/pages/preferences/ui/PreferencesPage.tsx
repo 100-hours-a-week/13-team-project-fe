@@ -130,7 +130,7 @@ export function PreferencesPage() {
                 {allergyGroups.map((item) => (
                   <button
                     key={item.code}
-                    className={`${styles.chip} ${allergySet.has(item.code) ? styles.active : ''}`}
+                    className={`${styles.chip} ${allergySet.has(item.code) ? styles.allergyActive : ''}`}
                     onClick={() => handleAllergyToggle(item.code)}
                     type="button"
                   >
@@ -148,7 +148,7 @@ export function PreferencesPage() {
                 {categories.map((item) => (
                   <button
                     key={item.code}
-                    className={`${styles.chip} ${preferredSet.has(item.code) ? styles.active : ''}`}
+                    className={`${styles.chip} ${preferredSet.has(item.code) ? styles.preferredActive : ''}`}
                     onClick={() => handlePreferredToggle(item.code)}
                     type="button"
                   >
