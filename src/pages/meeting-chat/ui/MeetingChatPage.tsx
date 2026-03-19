@@ -106,6 +106,9 @@ type MeetingDetailSummary = {
 }
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error'
+type PendingOutgoingMessage = {
+  tempId: number
+}
 
 const MESSAGE_PAGE_SIZE = 50
 const CHAT_IMAGE_MAX_FILE_SIZE_BYTES = (() => {
@@ -215,6 +218,8 @@ export function MeetingChatPage() {
     inFlight: false,
   })
   const unreadServerVersionRef = useRef(0)
+  const pendingMessagesRef = useRef<Map<string, PendingOutgoingMessage>>(new Map())
+  const nextTempMessageIdRef = useRef(-1)
 
   const myMemberId = member?.memberId ?? null
 
@@ -248,6 +253,32 @@ export function MeetingChatPage() {
     if (!container) return
     container.scrollTo({ top: container.scrollHeight, behavior })
   }, [])
+
+  const appendOptimisticMessage = useCallback(
+    (payload: { clientMessageId: string; type: 'TEXT' | 'IMAGE'; content: string }) => {
+      const tempId = nextTempMessageIdRef.current--
+      const optimistic: ChatMessageItem = {
+        message_id: tempId,
+        type: payload.type,
+        content: payload.content,
+        sender: member
+          ? {
+              user_id: member.memberId,
+              name: member.nickname,
+              profile_image_url: member.profileImageUrl ?? member.thumbnailImageUrl,
+            }
+          : null,
+        created_at: new Date().toISOString(),
+        unread_count: null,
+      }
+
+      messageIdSetRef.current.add(tempId)
+      pendingMessagesRef.current.set(payload.clientMessageId, { tempId })
+      setMessages((prev) => [...prev, optimistic])
+      requestAnimationFrame(() => scrollToBottom('smooth'))
+    },
+    [member, scrollToBottom],
+  )
 
   const flushReadPointer = useCallback(async () => {
     if (!parsedMeetingId) return
@@ -367,6 +398,8 @@ export function MeetingChatPage() {
     setError(null)
     unreadServerVersionRef.current = 0
     readPointerRef.current = { synced: 0, pending: 0, inFlight: false }
+    pendingMessagesRef.current.clear()
+    nextTempMessageIdRef.current = -1
 
     const bootstrap = async () => {
       try {
@@ -465,7 +498,38 @@ export function MeetingChatPage() {
         subscriptionsRef.current.push(
           client.subscribe('/user/queue/messages/ack', (frame) => {
             const payload = parseFrameBody<ChatSendAckEvent>(frame)
-            if (!payload) return
+            if (!payload || payload.event !== 'message_send_ack') return
+
+            const clientMessageId = payload.data.client_message_id
+            if (!clientMessageId) return
+
+            const pending = pendingMessagesRef.current.get(clientMessageId)
+            if (!pending) return
+
+            const nextMessageId = payload.data.message_id
+            pendingMessagesRef.current.delete(clientMessageId)
+
+            messageIdSetRef.current.delete(pending.tempId)
+            messageIdSetRef.current.add(nextMessageId)
+
+            setMessages((prev) => {
+              const alreadyExists = prev.some((message) => message.message_id === nextMessageId)
+              if (alreadyExists) {
+                return prev.filter((message) => message.message_id !== pending.tempId)
+              }
+
+              return prev.map((message) =>
+                message.message_id === pending.tempId
+                  ? {
+                      ...message,
+                      message_id: nextMessageId,
+                      created_at: payload.data.created_at,
+                    }
+                  : message,
+              )
+            })
+
+            scheduleReadPointerSync(nextMessageId)
           }),
         )
 
@@ -527,24 +591,25 @@ export function MeetingChatPage() {
 
   const publishMessage = useCallback(
     (payload: { type: 'TEXT' | 'IMAGE'; content: string }) => {
-      if (!parsedMeetingId) return false
+      if (!parsedMeetingId) return null
       const client = stompClientRef.current
       if (!client || !client.connected) {
         setEphemeralNotice('실시간 연결이 준비되지 않았습니다.')
-        return false
+        return null
       }
 
+      const clientMessageId = buildUuid()
       stickyBottomRef.current = true
       requestAnimationFrame(() => scrollToBottom('smooth'))
       client.publish({
         destination: `/api/v2/app/meetings/${parsedMeetingId}/messages`,
         body: JSON.stringify({
-          client_message_id: buildUuid(),
+          client_message_id: clientMessageId,
           type: payload.type,
           content: payload.content,
         }),
       })
-      return true
+      return clientMessageId
     },
     [parsedMeetingId, scrollToBottom],
   )
@@ -574,8 +639,13 @@ export function MeetingChatPage() {
       sendGuardRef.current = true
       setSending(true)
       lastSentRef.current = { text, at: now }
-      const sent = publishMessage({ type: 'TEXT', content: text })
-      if (sent) {
+      const clientMessageId = publishMessage({ type: 'TEXT', content: text })
+      if (clientMessageId) {
+        appendOptimisticMessage({
+          clientMessageId,
+          type: 'TEXT',
+          content: text,
+        })
         setComposer('')
       }
     } catch {
@@ -637,8 +707,13 @@ export function MeetingChatPage() {
         throw new Error(`s3_upload_failed_${uploadResponse.status}`)
       }
 
-      const sent = publishMessage({ type: 'IMAGE', content: presign.public_url })
-      if (!sent) return
+      const clientMessageId = publishMessage({ type: 'IMAGE', content: presign.public_url })
+      if (!clientMessageId) return
+      appendOptimisticMessage({
+        clientMessageId,
+        type: 'IMAGE',
+        content: presign.public_url,
+      })
     } catch {
       setEphemeralNotice('이미지 업로드에 실패했습니다.')
     } finally {
