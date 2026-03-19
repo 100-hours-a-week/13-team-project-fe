@@ -93,8 +93,8 @@
 }
 
 .secondaryButton {
-  background: #bbcb64;
-  color: #222831;
+  background: var(--primary-light);
+  color: var(--primary-dark);
 }
 
 .primaryButton:disabled,

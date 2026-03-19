@@ -201,8 +201,8 @@
 }
 
 .secondaryButton {
-  background: #bbcb64;
-  color: #222831;
+  background: var(--primary-light);
+  color: var(--primary-dark);
 }
 
 .checkboxGroup {
@@ -355,7 +355,7 @@
 
 .typeButtonActive {
   border-color: var(--accent);
-  background: rgba(187, 203, 100, 0.25);
+  background: var(--primary-light);
   color: var(--ink);
 }
 
@@ -407,7 +407,7 @@
 }
 
 .searchItem:hover {
-  background: rgba(187, 203, 100, 0.2);
+  background: var(--primary-light);
 }
 
 .searchName {

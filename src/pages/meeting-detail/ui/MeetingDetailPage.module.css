@@ -61,14 +61,14 @@
 
 .chatButton {
   position: relative;
-  border: 1px solid rgba(250, 205, 21, 0.65);
-  background: linear-gradient(180deg, #ffe96a 0%, #ffd634 100%);
-  color: #2b2b2b;
+  border: 1px solid transparent;
+  background: var(--primary);
+  color: #fff;
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 0.9rem;
   font-weight: 800;
-  box-shadow: 0 8px 20px rgba(255, 214, 52, 0.24);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .chatUnreadBadge {
@@ -118,10 +118,10 @@
 .statusBadge {
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(187, 203, 100, 0.25);
-  color: #222831;
+  background: var(--primary-light);
+  color: var(--primary-dark);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .detailRow {
@@ -221,8 +221,8 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: rgba(187, 203, 100, 0.25);
-  color: #222831;
+  background: var(--primary-light);
+  color: var(--primary-dark);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -250,26 +250,42 @@
   border: none;
   border-radius: 14px;
   padding: 14px;
-  background: var(--brand);
+  background: var(--primary);
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .primaryAction:disabled {
-  background: var(--brand);
+  background: var(--primary);
   color: #fff;
   opacity: 0.6;
 }
 
+.settlementAction {
+  border: 1px solid rgba(255, 111, 15, 0.28);
+  border-radius: 14px;
+  padding: 14px;
+  background: #fff3eb;
+  color: var(--primary-dark);
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.settlementAction:disabled {
+  opacity: 0.6;
+}
+
 .secondaryAction {
-  border: 1px solid rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.24);
   border-radius: 14px;
   padding: 12px;
-  background: var(--surface);
-  color: var(--ink);
+  background: #fff5f5;
+  color: #b42318;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .note {

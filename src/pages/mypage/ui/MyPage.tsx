@@ -303,7 +303,7 @@ export function MyPage() {
               {allergyGroups.map((item) => (
                 <button
                   key={item.code}
-                  className={`${styles.chip} ${allergySet.has(item.code) ? styles.active : ''}`}
+                  className={`${styles.chip} ${allergySet.has(item.code) ? styles.allergyActive : ''}`}
                   onClick={() => handleToggle('allergy', item.code)}
                   type="button"
                 >
@@ -321,7 +321,7 @@ export function MyPage() {
               {categories.map((item) => (
                 <button
                   key={item.code}
-                  className={`${styles.chip} ${preferredSet.has(item.code) ? styles.active : ''}`}
+                  className={`${styles.chip} ${preferredSet.has(item.code) ? styles.preferredActive : ''}`}
                   onClick={() => handlePreferredToggle(item.code)}
                   type="button"
                 >
