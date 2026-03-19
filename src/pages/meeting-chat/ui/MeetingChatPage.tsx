@@ -218,35 +218,70 @@ export function MeetingChatPage() {
     inFlight: false,
   })
   const unreadServerVersionRef = useRef(0)
+  const unreadCountMapRef = useRef<Map<number, number>>(new Map())
   const pendingMessagesRef = useRef<Map<string, PendingOutgoingMessage>>(new Map())
   const nextTempMessageIdRef = useRef(-1)
 
   const myMemberId = member?.memberId ?? null
 
-  const resetMessages = useCallback((items: ChatMessageItem[]) => {
-    messageIdSetRef.current = new Set(items.map((item) => item.message_id))
-    setMessages(items)
+  const resolveUnreadCount = useCallback((messageId: number, fallback?: number | null) => {
+    if (messageId > 0) {
+      const cached = unreadCountMapRef.current.get(messageId)
+      if (cached !== undefined) {
+        return cached
+      }
+    }
+    return fallback ?? null
   }, [])
+
+  const resetMessages = useCallback((items: ChatMessageItem[]) => {
+    const merged = items.map((item) => {
+      const resolved = resolveUnreadCount(item.message_id, item.unread_count)
+      if (item.message_id > 0 && typeof resolved === 'number') {
+        unreadCountMapRef.current.set(item.message_id, resolved)
+      }
+      if (item.unread_count === resolved) return item
+      return { ...item, unread_count: resolved }
+    })
+    messageIdSetRef.current = new Set(merged.map((item) => item.message_id))
+    setMessages(merged)
+  }, [resolveUnreadCount])
 
   const appendIncomingMessage = useCallback((message: ChatMessageItem) => {
     if (messageIdSetRef.current.has(message.message_id)) {
       return
     }
+    const resolvedUnreadCount = resolveUnreadCount(message.message_id, message.unread_count)
+    if (message.message_id > 0 && typeof resolvedUnreadCount === 'number') {
+      unreadCountMapRef.current.set(message.message_id, resolvedUnreadCount)
+    }
+    const nextMessage =
+      message.unread_count === resolvedUnreadCount
+        ? message
+        : { ...message, unread_count: resolvedUnreadCount }
     messageIdSetRef.current.add(message.message_id)
-    setMessages((prev) => [...prev, message])
-  }, [])
+    setMessages((prev) => [...prev, nextMessage])
+  }, [resolveUnreadCount])
 
   const prependOlderMessages = useCallback((olderItems: ChatMessageItem[]) => {
     if (olderItems.length === 0) return
     const deduped: ChatMessageItem[] = []
     for (const item of olderItems) {
       if (messageIdSetRef.current.has(item.message_id)) continue
+      const resolvedUnreadCount = resolveUnreadCount(item.message_id, item.unread_count)
+      if (item.message_id > 0 && typeof resolvedUnreadCount === 'number') {
+        unreadCountMapRef.current.set(item.message_id, resolvedUnreadCount)
+      }
       messageIdSetRef.current.add(item.message_id)
-      deduped.push(item)
+      if (item.unread_count === resolvedUnreadCount) {
+        deduped.push(item)
+      } else {
+        deduped.push({ ...item, unread_count: resolvedUnreadCount })
+      }
     }
     if (deduped.length === 0) return
     setMessages((prev) => [...deduped, ...prev])
-  }, [])
+  }, [resolveUnreadCount])
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const container = listRef.current
@@ -269,7 +304,7 @@ export function MeetingChatPage() {
             }
           : null,
         created_at: new Date().toISOString(),
-        unread_count: null,
+        unread_count: room ? Math.max(0, room.participantCount - 1) : null,
       }
 
       messageIdSetRef.current.add(tempId)
@@ -277,7 +312,7 @@ export function MeetingChatPage() {
       setMessages((prev) => [...prev, optimistic])
       requestAnimationFrame(() => scrollToBottom('smooth'))
     },
-    [member, scrollToBottom],
+    [member, room, scrollToBottom],
   )
 
   const flushReadPointer = useCallback(async () => {
@@ -397,6 +432,7 @@ export function MeetingChatPage() {
     let active = true
     setError(null)
     unreadServerVersionRef.current = 0
+    unreadCountMapRef.current.clear()
     readPointerRef.current = { synced: 0, pending: 0, inFlight: false }
     pendingMessagesRef.current.clear()
     nextTempMessageIdRef.current = -1
@@ -484,6 +520,9 @@ export function MeetingChatPage() {
             unreadServerVersionRef.current = payload.data.server_version
 
             const unreadMap = new Map(payload.data.items.map((item) => [item.message_id, item.unread_count]))
+            unreadMap.forEach((unreadCount, messageId) => {
+              unreadCountMapRef.current.set(messageId, unreadCount)
+            })
             setMessages((prev) =>
               prev.map((message) => {
                 const nextUnread = unreadMap.get(message.message_id)
@@ -524,6 +563,7 @@ export function MeetingChatPage() {
                       ...message,
                       message_id: nextMessageId,
                       created_at: payload.data.created_at,
+                      unread_count: resolveUnreadCount(nextMessageId, message.unread_count),
                     }
                   : message,
               )
@@ -581,7 +621,7 @@ export function MeetingChatPage() {
       }
       void client.deactivate()
     }
-  }, [appendIncomingMessage, parsedMeetingId, scheduleReadPointerSync, scrollToBottom])
+  }, [appendIncomingMessage, parsedMeetingId, resolveUnreadCount, scheduleReadPointerSync, scrollToBottom])
 
   useEffect(() => {
     if (!ephemeralNotice) return
