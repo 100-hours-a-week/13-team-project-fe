@@ -224,14 +224,20 @@ export function MeetingChatPage() {
 
   const myMemberId = member?.memberId ?? null
 
-  const resolveUnreadCount = useCallback((messageId: number, fallback?: number | null) => {
+  const resolveUnreadCount = useCallback((messageId: number, incoming?: number | null) => {
+    if (typeof incoming === 'number') {
+      if (messageId > 0) {
+        unreadCountMapRef.current.set(messageId, incoming)
+      }
+      return incoming
+    }
     if (messageId > 0) {
       const cached = unreadCountMapRef.current.get(messageId)
       if (cached !== undefined) {
         return cached
       }
     }
-    return fallback ?? null
+    return null
   }, [])
 
   const resetMessages = useCallback((items: ChatMessageItem[]) => {
@@ -304,7 +310,7 @@ export function MeetingChatPage() {
             }
           : null,
         created_at: new Date().toISOString(),
-        unread_count: room ? Math.max(0, room.participantCount - 1) : null,
+        unread_count: null,
       }
 
       messageIdSetRef.current.add(tempId)
@@ -312,7 +318,7 @@ export function MeetingChatPage() {
       setMessages((prev) => [...prev, optimistic])
       requestAnimationFrame(() => scrollToBottom('smooth'))
     },
-    [member, room, scrollToBottom],
+    [member, scrollToBottom],
   )
 
   const flushReadPointer = useCallback(async () => {
@@ -554,7 +560,16 @@ export function MeetingChatPage() {
             setMessages((prev) => {
               const alreadyExists = prev.some((message) => message.message_id === nextMessageId)
               if (alreadyExists) {
-                return prev.filter((message) => message.message_id !== pending.tempId)
+                return prev
+                  .filter((message) => message.message_id !== pending.tempId)
+                  .map((message) =>
+                    message.message_id === nextMessageId
+                      ? {
+                          ...message,
+                          unread_count: resolveUnreadCount(nextMessageId, message.unread_count),
+                        }
+                      : message,
+                  )
               }
 
               return prev.map((message) =>
