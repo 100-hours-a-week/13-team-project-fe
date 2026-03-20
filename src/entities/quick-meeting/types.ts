@@ -47,12 +47,14 @@ export type QuickVoteCandidate = {
 }
 
 export type QuickVoteCandidatesResponse = {
+  availableSuperLikeCouponCount: number
   candidates: QuickVoteCandidate[]
 }
 
 export type QuickVoteSubmitItem = {
   candidateId: number
   choice: VoteChoice
+  useCoupon: boolean
 }
 
 export type QuickVoteSubmitRequest = {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './MyPage.module.css'
+import { getMyCoupons, type MyCouponItem } from '@/entities/event'
 import {
   ApiError,
   getPreferenceChoices,
@@ -24,7 +25,7 @@ function toggleItem(list: string[], code: string) {
   return [...list, code]
 }
 
-type TabKey = 'profile' | 'reviews'
+type TabKey = 'profile' | 'reviews' | 'coupons'
 
 type PrefState = {
   allergy: string[]
@@ -37,6 +38,7 @@ export function MyPage() {
   const memberId = member?.memberId ?? null
   const [tab, setTab] = useState<TabKey>(() => {
     const query = new URLSearchParams(window.location.search)
+    if (query.get('tab') === 'coupons') return 'coupons'
     return query.get('tab') === 'reviews' ? 'reviews' : 'profile'
   })
   const [allergyGroups, setAllergyGroups] = useState<PreferenceChoice[]>([])
@@ -57,6 +59,10 @@ export function MyPage() {
   const [reviewsLoadingMore, setReviewsLoadingMore] = useState(false)
   const [reviewsError, setReviewsError] = useState<string | null>(null)
   const [reviewsInitialized, setReviewsInitialized] = useState(false)
+  const [coupons, setCoupons] = useState<MyCouponItem[]>([])
+  const [couponsLoading, setCouponsLoading] = useState(false)
+  const [couponsError, setCouponsError] = useState<string | null>(null)
+  const [couponsInitialized, setCouponsInitialized] = useState(false)
   const initializedRef = useRef(false)
 
   const displayName = member?.nickname ?? '회원'
@@ -212,6 +218,20 @@ export function MyPage() {
     }
   }, [reviewsCursor, reviewsHasNext, reviewsLoadingMore])
 
+  const loadCoupons = useCallback(async () => {
+    setCouponsLoading(true)
+    setCouponsError(null)
+    try {
+      const response = await getMyCoupons({ size: 20 })
+      setCoupons(response.items ?? [])
+    } catch {
+      setCouponsError('내 쿠폰을 불러오지 못했어요.')
+    } finally {
+      setCouponsInitialized(true)
+      setCouponsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (memberId === null) return
     setReviews([])
@@ -226,6 +246,12 @@ export function MyPage() {
     if (reviewsInitialized) return
     void loadInitialReviews()
   }, [loadInitialReviews, reviewsInitialized, tab])
+
+  useEffect(() => {
+    if (tab !== 'coupons') return
+    if (couponsInitialized) return
+    void loadCoupons()
+  }, [couponsInitialized, loadCoupons, tab])
 
   if (!member) {
     return (
@@ -287,7 +313,14 @@ export function MyPage() {
           onClick={() => setTab('reviews')}
           type="button"
         >
-          내 리뷰
+          리뷰
+        </button>
+        <button
+          className={tab === 'coupons' ? styles.tabActive : ''}
+          onClick={() => setTab('coupons')}
+          type="button"
+        >
+          쿠폰
         </button>
       </nav>
 
@@ -409,6 +442,49 @@ export function MyPage() {
                 className={styles.save}
                 onClick={() => {
                   void loadInitialReviews()
+                }}
+              >
+                다시 시도
+              </button>
+            ) : null}
+          </>
+        ) : null}
+        {tab === 'coupons' ? (
+          <>
+            {couponsLoading ? <p className={styles.state}>쿠폰을 불러오는 중...</p> : null}
+            {couponsError ? <p className={styles.error}>{couponsError}</p> : null}
+            {!couponsLoading && coupons.length === 0 ? (
+              <p className={styles.state}>보유한 쿠폰이 없어요.</p>
+            ) : null}
+            {coupons.length > 0 ? (
+              <div className={styles.list}>
+                {coupons.map((coupon) => (
+                  <article key={coupon.couponId} className={styles.couponItem}>
+                    <div className={styles.listHeader}>
+                      <strong>{coupon.couponName}</strong>
+                      <span
+                        className={`${styles.badge} ${
+                          coupon.usable ? styles.badgeUsable : styles.badgeDisabled
+                        }`}
+                      >
+                        {coupon.usable ? '사용 가능' : '사용 불가'}
+                      </span>
+                    </div>
+                    <p>{coupon.eventTitle}</p>
+                    <div className={styles.couponMeta}>
+                      <span>발급 {coupon.issuedAt.slice(0, 10)}</span>
+                      <span>만료 {coupon.expiredAt.slice(0, 10)}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            {couponsError && !couponsLoading ? (
+              <button
+                className={styles.save}
+                onClick={() => {
+                  void loadCoupons()
                 }}
               >
                 다시 시도

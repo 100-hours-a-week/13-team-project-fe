@@ -14,12 +14,14 @@ export type VoteCandidate = {
 }
 
 export type VoteCandidatesResponse = {
+  availableSuperLikeCouponCount: number
   candidates: VoteCandidate[]
 }
 
 export type VoteSubmitItem = {
   candidateId: number
   choice: VoteChoice
+  useCoupon: boolean
 }
 
 export type VoteSubmitRequest = {
