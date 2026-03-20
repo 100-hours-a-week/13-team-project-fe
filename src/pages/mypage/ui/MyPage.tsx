@@ -25,7 +25,7 @@ function toggleItem(list: string[], code: string) {
   return [...list, code]
 }
 
-type TabKey = 'profile' | 'reviews'
+type TabKey = 'profile' | 'reviews' | 'coupons'
 
 type PrefState = {
   allergy: string[]

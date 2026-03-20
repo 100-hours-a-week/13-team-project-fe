@@ -7,6 +7,7 @@ import {
   getQuickVoteStatus,
   submitQuickVote,
   type QuickVoteCandidate,
+  type QuickVoteSubmitItem,
   type QuickVoteStatusResponse,
 } from '@/entities/quick-meeting'
 import type { VoteChoice } from '@/entities/vote'
@@ -50,8 +51,8 @@ export function QuickVotePage() {
   const [candidates, setCandidates] = useState<QuickVoteCandidate[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [imageIndex, setImageIndex] = useState(0)
-  const [choices, setChoices] = useState<Array<{ candidateId: number; choice: VoteChoice }>>([])
-  const [history, setHistory] = useState<Array<{ candidateId: number; choice: VoteChoice }>>([])
+  const [choices, setChoices] = useState<QuickVoteSubmitItem[]>([])
+  const [history, setHistory] = useState<QuickVoteSubmitItem[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [status, setStatus] = useState<QuickVoteStatusResponse | null>(null)
