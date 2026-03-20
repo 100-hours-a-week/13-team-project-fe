@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './VotePage.module.css'
+import { ApiError } from '@/shared/lib/api'
 import {
   getVoteCandidates,
   submitVote,
@@ -85,11 +86,13 @@ export function VotePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
+  const [availableCouponCount, setAvailableCouponCount] = useState(0)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [imageIndex, setImageIndex] = useState(0)
   const [choices, setChoices] = useState<VoteSubmitItem[]>([])
   const [history, setHistory] = useState<VoteSubmitItem[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [useCouponForCurrent, setUseCouponForCurrent] = useState(false)
   const [swipeState, setSwipeState] = useState<SwipeState>({
     startX: 0,
     startY: 0,
@@ -152,10 +155,12 @@ export function VotePage() {
         const response = await getVoteCandidates(parsedMeetingId, parsedVoteId)
         if (!active) return
         setCandidates(response.candidates ?? [])
+        setAvailableCouponCount(response.availableSuperLikeCouponCount ?? 0)
         setCurrentIndex(0)
         setImageIndex(0)
         setChoices([])
         setHistory([])
+        setUseCouponForCurrent(false)
       } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : '투표 후보를 불러오지 못했어요.')
@@ -174,6 +179,7 @@ export function VotePage() {
 
   useEffect(() => {
     setImageIndex(0)
+    setUseCouponForCurrent(false)
   }, [currentIndex])
 
   useEffect(() => {
@@ -237,14 +243,25 @@ export function VotePage() {
 
   const totalCount = candidates.length
   const votedCount = choices.length
+  const usedCouponCount = useMemo(
+    () => choices.filter((item) => item.useCoupon).length,
+    [choices],
+  )
 
   const handleVote = useCallback(
     async (choice: VoteChoice) => {
       if (!currentCandidate || submitting) return
+      const shouldUseCoupon = useCouponForCurrent && availableCouponCount > usedCouponCount
+
+      if (useCouponForCurrent && !shouldUseCoupon) {
+        setError('사용 가능한 쿠폰이 부족합니다.')
+        return
+      }
 
       const nextItem: VoteSubmitItem = {
         candidateId: currentCandidate.candidateId,
         choice,
+        useCoupon: shouldUseCoupon,
       }
 
       const nextChoices = [...choices, nextItem]
@@ -260,6 +277,16 @@ export function VotePage() {
           await submitVote(parsedMeetingId, parsedVoteId, { items: nextChoices })
           navigate(`/meetings/${parsedMeetingId}/votes/${parsedVoteId}/wait`)
         } catch (err) {
+          if (err instanceof ApiError) {
+            if (err.message === 'VOTE_COUPON_NOT_ENOUGH') {
+              setError('사용 가능한 쿠폰이 부족합니다.')
+              return
+            }
+            if (err.message === 'QUICK_MEETING_COUPON_NOT_ALLOWED') {
+              setError('퀵모임에서는 쿠폰을 사용할 수 없습니다.')
+              return
+            }
+          }
           setError(err instanceof Error ? err.message : '투표 저장에 실패했어요.')
         } finally {
           setSubmitting(false)
@@ -274,6 +301,9 @@ export function VotePage() {
       parsedMeetingId,
       parsedVoteId,
       submitting,
+      availableCouponCount,
+      useCouponForCurrent,
+      usedCouponCount,
     ],
   )
 
@@ -334,6 +364,14 @@ export function VotePage() {
 
     setSwipeState((prev) => ({ ...prev, deltaX: 0, deltaY: 0, isDragging: false }))
   }
+
+  const progressRatio = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
+  const canUseMoreCoupons = usedCouponCount < availableCouponCount
+  const couponButtonCount = Math.max(
+    availableCouponCount - usedCouponCount - (useCouponForCurrent ? 1 : 0),
+    0,
+  )
+  const couponButtonLabel = `쿠폰 ${couponButtonCount}`
 
   const sendRagMessage = useCallback(
     async (overrideText?: string) => {
@@ -413,7 +451,6 @@ export function VotePage() {
     }
   }
 
-  const progressRatio = totalCount > 0 ? (votedCount / totalCount) * 100 : 0
   const disableActions = !currentCandidate || submitting || loading
 
   return (
@@ -453,6 +490,31 @@ export function VotePage() {
             }}
           >
             <div className={styles.imageArea}>
+              <div className={styles.couponOverlay}>
+                <button
+                  type="button"
+                  className={`${styles.couponOverlayButton} ${
+                    useCouponForCurrent ? styles.couponOverlayButtonActive : ''
+                  }`}
+                  disabled={!canUseMoreCoupons && !useCouponForCurrent}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerUp={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    if (!useCouponForCurrent && !canUseMoreCoupons) {
+                      setError('사용 가능한 쿠폰이 부족합니다.')
+                      return
+                    }
+                    setError(null)
+                    setUseCouponForCurrent((prev) => !prev)
+                  }}
+                >
+                  {couponButtonLabel}
+                </button>
+                <div className={styles.couponOverlayTooltip} role="note">
+                  <p>쿠폰 사용 시 내 선택 영향력이 2배가 됩니다.</p>
+                </div>
+              </div>
               {images.length > 0 ? (
                 <>
                   <img
