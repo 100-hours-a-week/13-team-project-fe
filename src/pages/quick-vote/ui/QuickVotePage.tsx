@@ -170,6 +170,7 @@ export function QuickVotePage() {
       const nextItem = {
         candidateId: currentCandidate.candidateId,
         choice,
+        useCoupon: false,
       }
 
       const nextChoices = [...choices, nextItem]
