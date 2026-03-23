@@ -7,6 +7,7 @@ export {
   getSettlementCompleted,
   getSettlementItems,
   getSettlementProgress,
+  getSettlementProgressStreamUrl,
   getSettlementResult,
   getSettlementSelection,
   getSettlementState,

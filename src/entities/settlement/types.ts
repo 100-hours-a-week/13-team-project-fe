@@ -37,8 +37,16 @@ export type SettlementReceiptConfirmRequest = {
   objectKey: string
 }
 
+export type SettlementProgressError = {
+  code: string
+  message: string
+}
+
 export type SettlementProgressResponse = {
+  settlementId?: number | null
   settlementStatus: SettlementStatus
+  requestId?: string | null
+  error?: SettlementProgressError | null
 }
 
 export type SettlementItem = {
