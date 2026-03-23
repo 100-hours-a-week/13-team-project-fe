@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import styles from './SettlementOcrLoadingPage.module.css'
-import { getSettlementProgress } from '@/entities/settlement'
+import {
+  getSettlementProgress,
+  getSettlementProgressStreamUrl,
+  type SettlementProgressResponse,
+} from '@/entities/settlement'
 import { navigate } from '@/shared/lib/navigation'
 import { routeBySettlementState } from '@/shared/lib/settlement'
 
@@ -15,27 +19,97 @@ export function SettlementOcrLoadingPage() {
     if (hasInvalidMeetingId) return
 
     let active = true
-    const timer = window.setInterval(async () => {
+    let eventSource: EventSource | null = null
+    let pollingTimer: number | null = null
+
+    const clearPolling = () => {
+      if (pollingTimer !== null) {
+        window.clearInterval(pollingTimer)
+        pollingTimer = null
+      }
+    }
+
+    const closeEventSource = () => {
+      if (eventSource) {
+        eventSource.close()
+        eventSource = null
+      }
+    }
+
+    const handleProgress = (progress: SettlementProgressResponse) => {
+      if (!active) return false
+
+      if (progress.settlementStatus === 'OCR_FAILED') {
+        closeEventSource()
+        clearPolling()
+        setError(progress.error?.message ?? null)
+        navigate(`/meetings/${parsedMeetingId}/settlement/ocr/failed`, { replace: true })
+        return true
+      }
+
+      if (progress.settlementStatus === 'OCR_SUCCEEDED') {
+        closeEventSource()
+        clearPolling()
+        navigate(`/meetings/${parsedMeetingId}/settlement/ocr/edit`, { replace: true })
+        return true
+      }
+
+      return false
+    }
+
+    const pollProgress = async () => {
       try {
         const progress = await getSettlementProgress(parsedMeetingId)
-        if (!active) return
-        if (progress.settlementStatus === 'OCR_FAILED') {
-          navigate(`/meetings/${parsedMeetingId}/settlement/ocr/failed`, { replace: true })
-          return
-        }
-        if (progress.settlementStatus === 'OCR_SUCCEEDED') {
-          navigate(`/meetings/${parsedMeetingId}/settlement/ocr/edit`, { replace: true })
-        }
+        handleProgress(progress)
       } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : 'OCR 진행 상태를 확인할 수 없어요.')
+        clearPolling()
         void routeBySettlementState(parsedMeetingId, { replace: true })
       }
-    }, 1500)
+    }
+
+    const startPollingFallback = () => {
+      if (!active || pollingTimer !== null) return
+      closeEventSource()
+      void pollProgress()
+      pollingTimer = window.setInterval(() => {
+        void pollProgress()
+      }, 1500)
+    }
+
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      startPollingFallback()
+    } else {
+      try {
+        eventSource = new EventSource(getSettlementProgressStreamUrl(parsedMeetingId), {
+          withCredentials: true,
+        })
+
+        eventSource.addEventListener('settlement-progress', (event) => {
+          if (!active) return
+          try {
+            const progress = JSON.parse((event as MessageEvent<string>).data) as SettlementProgressResponse
+            setError(null)
+            handleProgress(progress)
+          } catch {
+            startPollingFallback()
+          }
+        })
+
+        eventSource.onerror = () => {
+          if (!active) return
+          startPollingFallback()
+        }
+      } catch {
+        startPollingFallback()
+      }
+    }
 
     return () => {
       active = false
-      window.clearInterval(timer)
+      closeEventSource()
+      clearPolling()
     }
   }, [hasInvalidMeetingId, parsedMeetingId])
 
