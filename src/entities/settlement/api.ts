@@ -1,4 +1,5 @@
 import { request } from '@/shared/lib/api'
+import { API_BASE_URL } from '@/shared/config/env'
 import type {
   SettlementCompletedResponse,
   SettlementItemsResponse,
@@ -50,6 +51,11 @@ export async function getSettlementProgress(meetingId: number) {
   return request<SettlementProgressResponse>(
     `/api/v1/meetings/${meetingId}/settlement/progress`,
   )
+}
+
+export function getSettlementProgressStreamUrl(meetingId: number) {
+  const base = (API_BASE_URL ?? '').replace(/\/$/, '')
+  return `${base}/api/v1/meetings/${meetingId}/settlement/progress/stream`
 }
 
 export async function getSettlementItems(meetingId: number) {
