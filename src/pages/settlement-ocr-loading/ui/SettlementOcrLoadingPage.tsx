@@ -21,11 +21,21 @@ export function SettlementOcrLoadingPage() {
     let active = true
     let eventSource: EventSource | null = null
     let pollingTimer: number | null = null
+    let reconnectTimer: number | null = null
+    let reconnectAttempts = 0
+    const maxReconnectAttempts = 3
 
     const clearPolling = () => {
       if (pollingTimer !== null) {
         window.clearInterval(pollingTimer)
         pollingTimer = null
+      }
+    }
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer)
+        reconnectTimer = null
       }
     }
 
@@ -57,14 +67,21 @@ export function SettlementOcrLoadingPage() {
       return false
     }
 
+    const fetchProgressOnce = async () => {
+      const progress = await getSettlementProgress(parsedMeetingId)
+      handleProgress(progress)
+      return progress
+    }
+
     const pollProgress = async () => {
       try {
-        const progress = await getSettlementProgress(parsedMeetingId)
-        handleProgress(progress)
+        await fetchProgressOnce()
       } catch (err) {
         if (!active) return
         setError(err instanceof Error ? err.message : 'OCR 진행 상태를 확인할 수 없어요.')
+        closeEventSource()
         clearPolling()
+        clearReconnectTimer()
         void routeBySettlementState(parsedMeetingId, { replace: true })
       }
     }
@@ -72,15 +89,19 @@ export function SettlementOcrLoadingPage() {
     const startPollingFallback = () => {
       if (!active || pollingTimer !== null) return
       closeEventSource()
+      clearReconnectTimer()
       void pollProgress()
       pollingTimer = window.setInterval(() => {
         void pollProgress()
       }, 1500)
     }
 
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      startPollingFallback()
-    } else {
+    const connectSse = () => {
+      if (!active || typeof window === 'undefined' || typeof EventSource === 'undefined') {
+        startPollingFallback()
+        return
+      }
+
       try {
         eventSource = new EventSource(getSettlementProgressStreamUrl(parsedMeetingId), {
           withCredentials: true,
@@ -89,27 +110,66 @@ export function SettlementOcrLoadingPage() {
         eventSource.addEventListener('settlement-progress', (event) => {
           if (!active) return
           try {
-            const progress = JSON.parse((event as MessageEvent<string>).data) as SettlementProgressResponse
+            const progress = JSON.parse(
+              (event as MessageEvent<string>).data,
+            ) as SettlementProgressResponse
             setError(null)
+            reconnectAttempts = 0
             handleProgress(progress)
           } catch {
-            startPollingFallback()
+            scheduleReconnect()
           }
         })
 
         eventSource.onerror = () => {
           if (!active) return
-          startPollingFallback()
+          scheduleReconnect()
         }
       } catch {
         startPollingFallback()
       }
     }
 
+    const scheduleReconnect = () => {
+      closeEventSource()
+      clearReconnectTimer()
+
+      if (!active) return
+      if (reconnectAttempts >= maxReconnectAttempts) {
+        startPollingFallback()
+        return
+      }
+
+      reconnectAttempts += 1
+      reconnectTimer = window.setTimeout(async () => {
+        if (!active) return
+        try {
+          await fetchProgressOnce()
+        } catch {
+          // If progress fetch also fails, try reconnecting or fallback on next cycle.
+        }
+        connectSse()
+      }, 1500)
+    }
+
+    void (async () => {
+      try {
+        await fetchProgressOnce()
+        if (!active) return
+        setError(null)
+      } catch (err) {
+        if (!active) return
+        setError(err instanceof Error ? err.message : 'OCR 진행 상태를 확인할 수 없어요.')
+      }
+
+      connectSse()
+    })()
+
     return () => {
       active = false
       closeEventSource()
       clearPolling()
+      clearReconnectTimer()
     }
   }, [hasInvalidMeetingId, parsedMeetingId])
 
